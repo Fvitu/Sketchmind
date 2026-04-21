@@ -1,167 +1,115 @@
-import { NavLink, Outlet, useNavigate, useLocation } from "react-router-dom";
-import { LayoutGrid, User as UserIcon, LogOut, Plus } from "lucide-react";
+import { NavLink, Outlet, useLocation } from "react-router-dom";
+import { LayoutGrid, User as UserIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Logo } from "@/components/brand/Logo";
-import { auth, useAuthUser, boards as boardsApi, BOARD_LIMIT } from "@/lib/store";
-import { Avatar, AvatarFallback } from "@/components/ui/avatar";
-import { Button } from "@/components/ui/button";
-import { initials } from "@/lib/format";
-import { toast } from "sonner";
+import { useAuthUser, BOARD_LIMIT } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
-const navItem =
-  "group/nav flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium text-sidebar-foreground transition-colors hover:bg-sidebar-accent hover:text-sidebar-accent-foreground";
-const navItemActive = "bg-sidebar-accent text-sidebar-accent-foreground";
+const navItemClasses =
+	"group/nav relative flex flex-col items-center justify-center p-[10px_16px] sm:p-[10px_24px] transition-colors duration-100 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary rounded-full";
 
 export const AppShell = () => {
-  const user = useAuthUser();
-  const navigate = useNavigate();
+	const user = useAuthUser();
 
-  if (!user) return null;
+	if (!user) return null;
 
-  const handleNewBoard = async () => {
-    try {
-      const b = await boardsApi.create(user.id);
-      toast.success("Board created");
-      navigate(`/board/${b.id}`);
-    } catch (e) {
-      toast.error(e instanceof Error ? e.message : "Couldn't create board");
-    }
-  };
+	return (
+		<div className="relative min-h-screen bg-background flex flex-col overflow-hidden">
+			<div aria-hidden="true" className="page-reactive-glow" />
 
-  const handleSignOut = async () => {
-    try {
-      await auth.signOut();
-      navigate("/login", { replace: true });
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Couldn't sign out");
-    }
-  };
+			{/* Brand Logo - Fixed Top Left */}
+			<div className="fixed top-5 left-6 z-40">
+				<Logo />
+			</div>
 
-  return (
-    <div className="relative min-h-screen bg-background flex overflow-hidden">
-      <div aria-hidden="true" className="page-reactive-glow" />
+			<main className="relative z-10 flex-1 min-w-0 pb-[100px] pt-[80px]">
+				<div className="mx-auto max-w-6xl w-full px-5 md:px-8">
+					<AnimatedOutlet />
+				</div>
+			</main>
 
-      <aside className="relative z-10 hidden md:flex w-64 flex-col border-r border-sidebar-border bg-sidebar">
-        <div className="px-5 py-5">
-          <Logo />
-        </div>
+			{/* Floating Bottom Nav Bar */}
+			<nav
+				className="fixed bottom-4 sm:bottom-7 left-4 sm:left-1/2 w-[calc(100%-32px)] sm:w-auto sm:-translate-x-1/2 z-50 flex items-stretch sm:items-center justify-center gap-1 rounded-full"
+				style={{
+					backgroundColor: "rgba(15, 15, 15, 0.85)",
+					backdropFilter: "blur(20px) saturate(180%)",
+					WebkitBackdropFilter: "blur(20px) saturate(180%)",
+					border: "1px solid rgba(255, 255, 255, 0.08)",
+					boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
+					paddingTop: "6px",
+					paddingLeft: "8px",
+					paddingRight: "8px",
+					paddingBottom: "max(6px, env(safe-area-inset-bottom))",
+				}}>
+				<NavLink
+					to="/dashboard"
+					aria-label="Boards"
+					className={({ isActive }) =>
+						cn(
+							navItemClasses,
+							"flex-1 sm:flex-none",
+							isActive ? "text-[#22d3ee]" : "text-[rgba(255,255,255,0.45)] hover:text-[rgba(255,255,255,0.7)]",
+						)
+					}>
+					{({ isActive }) => (
+						<>
+							{isActive && (
+								<motion.div
+									layoutId="active-nav-pill"
+									className="absolute inset-0 bg-[rgba(255,255,255,0.1)] rounded-full"
+									transition={{ duration: 0.15, ease: "easeOut" }}
+								/>
+							)}
+							<LayoutGrid className="relative z-10 h-5 w-5 mb-1" />
+							<span className="relative z-10 text-[11px] font-medium tracking-[0.02em]">Boards</span>
+						</>
+					)}
+				</NavLink>
 
-        <div className="px-3">
-          <Button
-            onClick={() => {
-              void handleNewBoard();
-            }}
-            className="group/new w-full justify-start gap-2 bg-gradient-brand text-primary-foreground hover:opacity-90 shadow-glow-accent"
-          >
-            <Plus className="h-4 w-4 transition-transform duration-300 ease-out group-hover/new:rotate-90" />
-            New board
-          </Button>
-        </div>
-
-        <nav className="mt-6 px-3 space-y-1">
-          <NavLink to="/dashboard" className={({ isActive }) => cn(navItem, isActive && navItemActive)}>
-            {({ isActive }) => (
-              <>
-                <LayoutGrid className={cn("h-4 w-4 transition-transform duration-200 ease-out", !isActive && "group-hover/nav:scale-125 group-hover/nav:-rotate-6")} />
-                Dashboard
-              </>
-            )}
-          </NavLink>
-          <NavLink to="/profile" className={({ isActive }) => cn(navItem, isActive && navItemActive)}>
-            {({ isActive }) => (
-              <>
-                <UserIcon className={cn("h-4 w-4 transition-transform duration-200 ease-out", !isActive && "group-hover/nav:scale-125 group-hover/nav:-rotate-6")} />
-                Profile
-              </>
-            )}
-          </NavLink>
-        </nav>
-
-        <div className="mt-auto p-3 space-y-3">
-          <div className="flex items-center gap-3 rounded-lg p-2">
-            <Avatar className="h-8 w-8">
-              <AvatarFallback className="bg-accent text-foreground text-xs">{initials(user.display_name)}</AvatarFallback>
-            </Avatar>
-            <div className="min-w-0 flex-1">
-              <p className="truncate text-sm font-medium">{user.display_name}</p>
-              <p className="truncate text-xs text-muted-foreground">{user.email}</p>
-            </div>
-            <motion.button
-              onClick={handleSignOut}
-              whileHover={{ scale: 1.18, rotate: -12 }}
-              whileTap={{ scale: 0.85, rotate: 8 }}
-              transition={{ type: "spring", stiffness: 420, damping: 14 }}
-              className="rounded-md p-1.5 text-muted-foreground hover:bg-destructive/15 hover:text-destructive transition-colors"
-              aria-label="Sign out"
-              title="Sign out"
-            >
-              <LogOut className="h-4 w-4" />
-            </motion.button>
-          </div>
-        </div>
-      </aside>
-
-      {/* Mobile top bar */}
-      <header className="md:hidden fixed top-0 inset-x-0 z-40 flex items-center justify-between border-b border-border bg-background/80 backdrop-blur px-4 h-14">
-        <Logo />
-        <div className="flex items-center gap-2">
-          <Button
-            size="sm"
-            onClick={() => {
-              void handleNewBoard();
-            }}
-            className="bg-gradient-brand text-primary-foreground"
-          >
-            <Plus className="h-4 w-4 mr-1" /> New
-          </Button>
-          <motion.button
-            onClick={handleSignOut}
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.92 }}
-            className="p-2 text-muted-foreground hover:text-destructive transition-colors"
-          >
-            <LogOut className="h-4 w-4" />
-          </motion.button>
-        </div>
-      </header>
-
-      <main className="relative z-10 flex-1 min-w-0 pt-14 md:pt-0">
-        <div className="mx-auto max-w-6xl px-5 md:px-8 py-8">
-          <AnimatedOutlet />
-        </div>
-
-        {/* Mobile bottom nav */}
-        <nav className="md:hidden fixed bottom-0 inset-x-0 z-40 grid grid-cols-2 border-t border-border bg-background/95 backdrop-blur">
-          <NavLink to="/dashboard" className={({ isActive }) => cn("flex flex-col items-center py-2.5 text-xs gap-1", isActive ? "text-primary" : "text-muted-foreground")}>
-            <LayoutGrid className="h-5 w-5" /> Boards
-          </NavLink>
-          <NavLink to="/profile" className={({ isActive }) => cn("flex flex-col items-center py-2.5 text-xs gap-1", isActive ? "text-primary" : "text-muted-foreground")}>
-            <UserIcon className="h-5 w-5" /> Profile
-          </NavLink>
-        </nav>
-        <div className="md:hidden h-14" />
-      </main>
-    </div>
-  );
+				<NavLink
+					to="/profile"
+					aria-label="Profile"
+					className={({ isActive }) =>
+						cn(
+							navItemClasses,
+							"flex-1 sm:flex-none",
+							isActive ? "text-[#22d3ee]" : "text-[rgba(255,255,255,0.45)] hover:text-[rgba(255,255,255,0.7)]",
+						)
+					}>
+					{({ isActive }) => (
+						<>
+							{isActive && (
+								<motion.div
+									layoutId="active-nav-pill"
+									className="absolute inset-0 bg-[rgba(255,255,255,0.1)] rounded-full"
+									transition={{ duration: 0.15, ease: "easeOut" }}
+								/>
+							)}
+							<UserIcon className="relative z-10 h-5 w-5 mb-1" />
+							<span className="relative z-10 text-[11px] font-medium tracking-[0.02em]">Profile</span>
+						</>
+					)}
+				</NavLink>
+			</nav>
+		</div>
+	);
 };
 
 const AnimatedOutlet = () => {
-  const location = useLocation();
-  return (
-    <AnimatePresence mode="wait">
-      <motion.div
-        key={location.pathname}
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        exit={{ opacity: 0, y: -10 }}
-        transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <Outlet />
-      </motion.div>
-    </AnimatePresence>
-  );
+	const location = useLocation();
+	return (
+		<AnimatePresence mode="wait">
+			<motion.div
+				key={location.pathname}
+				initial={{ opacity: 0, y: 10 }}
+				animate={{ opacity: 1, y: 0 }}
+				exit={{ opacity: 0, y: -10 }}
+				transition={{ duration: 0.32, ease: [0.22, 1, 0.36, 1] }}>
+				<Outlet />
+			</motion.div>
+		</AnimatePresence>
+	);
 };
 
 export { BOARD_LIMIT };
-

@@ -14,9 +14,12 @@ const publicDir = path.join(rootDir, "public");
 const envPath = path.join(rootDir, ".env");
 const isProd = process.env.NODE_ENV === "production";
 const port = Number(process.env.PORT || 8080);
-const BOARD_LIMIT = 10;
+const BOARD_LIMIT = 12;
 const SESSION_COOKIE_NAME = "sketchmind_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
+const BOARD_ASSET_BUCKET = "board-assets";
+const ALLOWED_ASSET_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"]);
+const MAX_ASSET_SIZE_BYTES = 10 * 1024 * 1024;
 
 loadEnvFile(envPath);
 
@@ -81,6 +84,11 @@ const server = http.createServer(async (req, res) => {
     if (url.pathname === "/api/boards") {
       return await handleBoardsCollection(req, res);
     }
+
+    const boardAssetsPathMatch = url.pathname.match(/^\/api\/boards\/([^/]+)\/assets$/);
+	if (boardAssetsPathMatch) {
+		return await handleBoardAssetUpload(req, res, decodeURIComponent(boardAssetsPathMatch[1]));
+	}
 
     const boardPathMatch = url.pathname.match(/^\/api\/boards\/([^/]+)$/);
     if (boardPathMatch) {
@@ -184,12 +192,13 @@ async function handleMagicLinkVerification(url, res) {
 async function handleRegisterSessionRequest(req, res) {
   const body = await readJson(req);
   const idToken = typeof body?.id_token === "string" ? body.id_token.trim() : "";
+  const code = typeof body?.code === "string" ? body.code.trim() : "";
 
-  if (!idToken) {
-    return json(res, 400, { error: "Missing Google ID token" });
+  if (!idToken && !code) {
+		return json(res, 400, { error: "Missing Google ID token or authorization code" });
   }
 
-  const identity = await verifyGoogleIdToken(idToken);
+  const identity = idToken ? await verifyGoogleIdToken(idToken) : await verifyGoogleAuthorizationCode(code);
 
   const user = await registerSessionForIdentity(identity, res);
   return json(res, 200, { user });
@@ -321,8 +330,8 @@ async function handleBoardItem(req, res, boardId) {
 
   if (req.method === "PATCH") {
     const body = await readJson(req);
-    const renamed = await renameBoardForUser(userId, boardId, body?.title);
-    return json(res, 200, { board: renamed });
+    const updated = await updateBoardForUser(userId, boardId, body);
+	return json(res, 200, { board: updated });
   }
 
   if (req.method === "DELETE") {
@@ -333,11 +342,96 @@ async function handleBoardItem(req, res, boardId) {
   return json(res, 405, { error: "Method not allowed" });
 }
 
+async function handleBoardAssetUpload(req, res, boardId) {
+	const userId = getSessionUserId(req);
+	if (!userId) {
+		return json(res, 401, { error: "Not signed in" });
+	}
+
+	if (req.method !== "POST") {
+		return json(res, 405, { error: "Method not allowed" });
+	}
+
+	const access = await getBoardAccessForUser(userId, boardId);
+	if (!access) {
+		return json(res, 404, { error: "Board not found" });
+	}
+
+	if (access.role === "viewer") {
+		return json(res, 403, { error: "You do not have permission to upload assets" });
+	}
+
+	const formData = await readFormData(req);
+	const file = formData.get("file");
+
+	if (!(file instanceof File)) {
+		return json(res, 400, { error: "No file provided" });
+	}
+
+	if (!ALLOWED_ASSET_MIME_TYPES.has(file.type)) {
+		return json(res, 400, { error: "File type not allowed" });
+	}
+
+	if (file.size > MAX_ASSET_SIZE_BYTES) {
+		return json(res, 400, { error: "File too large (max 10MB)" });
+	}
+
+	const extension = safeFileExtension(file);
+	const storagePath = `${boardId}/${userId}/${Date.now()}-${randomUUID()}.${extension}`;
+	const buffer = Buffer.from(await file.arrayBuffer());
+	const client = getSupabaseClient();
+
+	const { error: uploadError } = await client.storage.from(BOARD_ASSET_BUCKET).upload(storagePath, buffer, {
+		contentType: file.type,
+		upsert: false,
+	});
+
+	if (uploadError) {
+		throw new HttpError(500, uploadError.message);
+	}
+
+	const { data: publicUrlData } = client.storage.from(BOARD_ASSET_BUCKET).getPublicUrl(storagePath);
+
+	const { error: dbError } = await client.from("assets").insert({
+		board_id: boardId,
+		uploader_id: userId,
+		storage_path: storagePath,
+		public_url: publicUrlData.publicUrl,
+		mime_type: file.type,
+		size_bytes: file.size,
+	});
+
+	if (dbError) {
+		throw new HttpError(500, userFacingDatabaseError(dbError.message));
+	}
+
+	return json(res, 200, {
+		ok: true,
+		url: publicUrlData.publicUrl,
+		path: storagePath,
+	});
+}
+
 async function registerSessionForIdentity(identity, res) {
   const user = await persistUserProfile(identity);
   const token = signSessionToken(user.id);
   appendSetCookie(res, buildSessionCookie(token));
   return user;
+}
+
+async function getUserProfileByEmail(email) {
+	const client = getSupabaseClient();
+	const { data, error } = await client.from("profiles").select("id,email,display_name,avatar_url,created_at").eq("email", email).maybeSingle();
+
+	if (error) {
+		throw new HttpError(500, userFacingDatabaseError(error.message));
+	}
+
+	if (!data) {
+		return null;
+	}
+
+	return mapUserRow(data);
 }
 
 function normalizeIncomingUser(input) {
@@ -370,22 +464,62 @@ async function persistUserProfile(identity) {
   const client = getSupabaseClient();
   const now = new Date().toISOString();
 
+  const existing = await getUserProfileByEmail(identity.email);
+  if (existing) {
+		const { data, error } = await client
+			.from("profiles")
+			.update({
+				email: identity.email,
+				display_name: identity.display_name,
+				avatar_url: identity.avatar_url,
+				updated_at: now,
+			})
+			.eq("id", existing.id)
+			.select("id,email,display_name,avatar_url,created_at")
+			.single();
+
+		if (error || !data) {
+			throw new HttpError(500, userFacingDatabaseError(error?.message || "Couldn't save your account"));
+		}
+
+		return mapUserRow(data);
+  }
+
   const { data, error } = await client
-    .from("profiles")
-    .upsert(
-      {
-        id: identity.id,
-        email: identity.email,
-        display_name: identity.display_name,
-        avatar_url: identity.avatar_url,
-        updated_at: now,
-      },
-      { onConflict: "id" },
-    )
-    .select("id,email,display_name,avatar_url,created_at")
-    .single();
+		.from("profiles")
+		.insert({
+			id: identity.id,
+			email: identity.email,
+			display_name: identity.display_name,
+			avatar_url: identity.avatar_url,
+			created_at: now,
+			updated_at: now,
+		})
+		.select("id,email,display_name,avatar_url,created_at")
+		.single();
 
   if (error || !data) {
+    if (error?.code === "23505") {
+		const fallback = await getUserProfileByEmail(identity.email);
+		if (fallback) {
+			const { data: updatedData, error: updateError } = await client
+				.from("profiles")
+				.update({
+					email: identity.email,
+					display_name: identity.display_name,
+					avatar_url: identity.avatar_url,
+					updated_at: now,
+				})
+				.eq("id", fallback.id)
+				.select("id,email,display_name,avatar_url,created_at")
+				.single();
+
+			if (!updateError && updatedData) {
+				return mapUserRow(updatedData);
+			}
+		}
+	}
+
     throw new HttpError(500, userFacingDatabaseError(error?.message || "Couldn't save your account"));
   }
 
@@ -427,19 +561,30 @@ async function listBoardsForUser(userId) {
 }
 
 async function getBoardForUser(userId, boardId) {
+  const access = await getBoardAccessForUser(userId, boardId);
+  if (!access) {
+		return null;
+  }
+
   const client = getSupabaseClient();
   const { data, error } = await client
-    .from("boards")
-    .select("id,owner_id,title,description,visibility,thumbnail_path,canvas_state,created_at,last_edited_at")
-    .eq("id", boardId)
-    .eq("owner_id", userId)
-    .maybeSingle();
+		.from("boards")
+		.select("id,owner_id,title,description,visibility,thumbnail_path,canvas_state,created_at,last_edited_at")
+		.eq("id", boardId)
+		.maybeSingle();
 
   if (error) {
     throw new HttpError(500, userFacingDatabaseError(error.message));
   }
 
-  return data || null;
+  if (!data) {
+		return null;
+  }
+
+  return {
+		...data,
+		role: access.role,
+  };
 }
 
 async function createBoardForUser(userId, rawTitle, rawId) {
@@ -517,6 +662,65 @@ async function renameBoardForUser(userId, boardId, rawTitle) {
   return data;
 }
 
+async function updateBoardForUser(userId, boardId, body) {
+	const access = await getBoardAccessForUser(userId, boardId);
+	if (!access) {
+		throw new HttpError(404, "Board not found");
+	}
+
+	if (typeof body?.title === "string") {
+		return await renameBoardForUser(userId, boardId, body.title);
+	}
+
+	if (access.role === "viewer") {
+		throw new HttpError(403, "You do not have permission to edit this board");
+	}
+
+	const patch = {
+		last_edited_at: new Date().toISOString(),
+	};
+
+	if (Object.prototype.hasOwnProperty.call(body ?? {}, "canvas_state")) {
+		patch.canvas_state = body.canvas_state ?? null;
+	}
+
+	if (typeof body?.thumbnail_path === "string") {
+		patch.thumbnail_path = body.thumbnail_path.trim() || null;
+	} else if (body?.thumbnail_path === null) {
+		patch.thumbnail_path = null;
+	}
+
+	if (Object.keys(patch).length === 1) {
+		const current = await getBoardForUser(userId, boardId);
+		if (!current) {
+			throw new HttpError(404, "Board not found");
+		}
+
+		return current;
+	}
+
+	const client = getSupabaseClient();
+	const { data, error } = await client
+		.from("boards")
+		.update(patch)
+		.eq("id", boardId)
+		.select("id,owner_id,title,description,visibility,thumbnail_path,canvas_state,created_at,last_edited_at")
+		.maybeSingle();
+
+	if (error) {
+		throw new HttpError(500, userFacingDatabaseError(error.message));
+	}
+
+	if (!data) {
+		throw new HttpError(404, "Board not found");
+	}
+
+	return {
+		...data,
+		role: access.role,
+	};
+}
+
 async function deleteBoardForUser(userId, boardId) {
   const client = getSupabaseClient();
   const { data, error } = await client
@@ -534,6 +738,40 @@ async function deleteBoardForUser(userId, boardId) {
   if (!data) {
     throw new HttpError(404, "Board not found");
   }
+}
+
+async function getBoardAccessForUser(userId, boardId) {
+	const client = getSupabaseClient();
+	const { data: board, error } = await client.from("boards").select("id,owner_id").eq("id", boardId).maybeSingle();
+
+	if (error) {
+		throw new HttpError(500, userFacingDatabaseError(error.message));
+	}
+
+	if (!board) {
+		return null;
+	}
+
+	if (board.owner_id === userId) {
+		return { role: "owner" };
+	}
+
+	const { data: membership, error: membershipError } = await client
+		.from("board_members")
+		.select("role")
+		.eq("board_id", boardId)
+		.eq("user_id", userId)
+		.maybeSingle();
+
+	if (membershipError) {
+		throw new HttpError(500, userFacingDatabaseError(membershipError.message));
+	}
+
+	if (!membership) {
+		return null;
+	}
+
+	return { role: membership.role };
 }
 
 function mapUserRow(row) {
@@ -576,12 +814,65 @@ async function verifyGoogleIdToken(idToken) {
   return identity;
 }
 
-function createGoogleOAuthClient() {
-  if (!runtimeConfig.googleClientId) {
-    return null;
-  }
+async function verifyGoogleAuthorizationCode(code) {
+	const client = getGoogleOAuthClient();
+	const redirectUri = `${runtimeConfig.siteUrl}/login`;
+	let tokens;
 
-  return new OAuth2Client(runtimeConfig.googleClientId);
+	try {
+		({ tokens } = await client.getToken({
+			code,
+			redirect_uri: redirectUri,
+		}));
+	} catch (error) {
+		const message = extractGoogleOAuthError(error);
+		if (/redirect_uri_mismatch/i.test(message)) {
+			throw new HttpError(400, `Google OAuth redirect mismatch. Add ${redirectUri} to Authorized redirect URIs for this OAuth client.`);
+		}
+
+		if (/invalid_grant/i.test(message)) {
+			throw new HttpError(401, "Google sign-in failed. Try again.");
+		}
+
+		throw new HttpError(401, "Couldn't verify Google sign-in");
+	}
+
+	if (!tokens?.id_token) {
+		throw new HttpError(401, "Google sign-in response is missing required fields");
+	}
+
+	return await verifyGoogleIdToken(tokens.id_token);
+}
+
+function createGoogleOAuthClient() {
+	if (!runtimeConfig.googleClientId) {
+		return null;
+	}
+
+	return new OAuth2Client(runtimeConfig.googleClientId, process.env.GOOGLE_CLIENT_SECRET || undefined);
+}
+
+function extractGoogleOAuthError(error) {
+	if (error && typeof error === "object") {
+		if ("response" in error && error.response && typeof error.response === "object") {
+			const response = error.response;
+			if ("data" in response && response.data && typeof response.data === "object") {
+				const data = response.data;
+				if ("error" in data && typeof data.error === "string") {
+					return data.error;
+				}
+				if ("error_description" in data && typeof data.error_description === "string") {
+					return data.error_description;
+				}
+			}
+		}
+
+		if ("message" in error && typeof error.message === "string") {
+			return error.message;
+		}
+	}
+
+	return "Google OAuth request failed";
 }
 
 function getGoogleOAuthClient() {
@@ -767,6 +1058,34 @@ function loadEnvFile(filePath) {
   }
 }
 
+async function readFormData(req) {
+	const host = req.headers.host || `localhost:${port}`;
+	const url = new URL(req.url || "/", `http://${host}`);
+	const headers = new Headers();
+
+	for (const [key, value] of Object.entries(req.headers)) {
+		if (Array.isArray(value)) {
+			for (const entry of value) {
+				headers.append(key, entry);
+			}
+			continue;
+		}
+
+		if (typeof value === "string") {
+			headers.set(key, value);
+		}
+	}
+
+	const request = new Request(url, {
+		method: req.method,
+		headers,
+		body: req,
+		duplex: "half",
+	});
+
+	return await request.formData();
+}
+
 function readJson(req) {
   return new Promise((resolve, reject) => {
     let body = "";
@@ -785,6 +1104,29 @@ function readJson(req) {
     });
     req.on("error", reject);
   });
+}
+
+function safeFileExtension(file) {
+	const fromName = typeof file.name === "string" && file.name.includes(".") ? file.name.split(".").pop()?.toLowerCase() : "";
+
+	if (fromName && /^[a-z0-9]+$/i.test(fromName)) {
+		return fromName;
+	}
+
+	switch (file.type) {
+		case "image/jpeg":
+			return "jpg";
+		case "image/png":
+			return "png";
+		case "image/gif":
+			return "gif";
+		case "image/webp":
+			return "webp";
+		case "image/svg+xml":
+			return "svg";
+		default:
+			return "bin";
+	}
 }
 
 function normalizeEmail(value) {

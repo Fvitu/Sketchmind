@@ -9,6 +9,22 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { auth, useAuthState } from "@/lib/store";
 
+function parseGoogleStateOrigin(rawState: string | null): string | null {
+	if (!rawState) return null;
+
+	try {
+		const decoded = JSON.parse(window.atob(rawState)) as { openerOrigin?: unknown };
+		if (typeof decoded.openerOrigin !== "string" || !decoded.openerOrigin) {
+			return null;
+		}
+
+		const origin = new URL(decoded.openerOrigin).origin;
+		return /^https?:\/\//i.test(origin) ? origin : null;
+	} catch {
+		return null;
+	}
+}
+
 const Login = () => {
   const navigate = useNavigate();
   const { user, loading: authLoading, runtimeConfig } = useAuthState();
@@ -54,6 +70,42 @@ const Login = () => {
     window.history.replaceState({}, document.title, nextUrl.pathname + nextUrl.search);
   }, [navigate]);
 
+	useEffect(() => {
+		const params = new URLSearchParams(window.location.search);
+		const code = params.get("code");
+		if (!code) return;
+		const popupTargetOrigin = parseGoogleStateOrigin(params.get("state")) || window.location.origin;
+
+		if (window.opener && window.opener !== window) {
+			window.opener.postMessage(
+				{
+					type: "google-sign-in-code",
+					code,
+				},
+				popupTargetOrigin,
+			);
+			window.close();
+			return;
+		}
+
+		setLoading("google");
+		auth.signInWithGoogleCode(code)
+			.then(() => {
+				toast.success("Signed in with Google");
+				navigate("/dashboard", { replace: true });
+			})
+			.catch((error) => {
+				toast.error(error instanceof Error ? error.message : "Couldn't complete Google sign-in");
+			})
+			.finally(() => {
+				setLoading(null);
+				const nextUrl = new URL(window.location.href);
+				nextUrl.searchParams.delete("code");
+				nextUrl.searchParams.delete("state");
+				window.history.replaceState({}, document.title, nextUrl.pathname + nextUrl.search);
+			});
+	}, [navigate]);
+
   const handleEmail = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!/^\S+@\S+\.\S+$/.test(email)) {
@@ -76,18 +128,18 @@ const Login = () => {
     }
   };
 
-  const handleGoogle = async () => {
-    setLoading("google");
+	const handleGoogle = async () => {
+		setLoading("google");
 
-    try {
-      await auth.signInWithGoogle();
-      toast.success("Signed in with Google");
-      navigate("/dashboard", { replace: true });
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : "Couldn't start Google sign-in");
-      setLoading(null);
-    }
-  };
+		try {
+			await auth.signInWithGoogle();
+			toast.success("Signed in with Google");
+			navigate("/dashboard", { replace: true });
+		} catch (error) {
+			toast.error(error instanceof Error ? error.message : "Couldn't start Google sign-in");
+			setLoading(null);
+		}
+	};
 
   if (authLoading) {
     return (
@@ -135,7 +187,7 @@ const Login = () => {
 						</div>
 					</motion.div>
 					<p className="text-xs text-muted-foreground">
-						{runtimeConfig.googleEnabled || runtimeConfig.magicLinkEnabled ? "Built for Sketchmind" : "Auth configuration incomplete"}
+						{runtimeConfig.googleEnabled || runtimeConfig.magicLinkEnabled ? "Created with ❤️ by Fvitu © 2026" : "Auth configuration incomplete"}
 					</p>
 				</div>
 			</section>

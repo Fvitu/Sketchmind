@@ -60,12 +60,17 @@
     --sidebar-accent: 213 24% 14%;
     --sidebar-accent-foreground: 213 30% 95%;
     --sidebar-border: 213 20% 14%;
-    --sidebar-ring: 195 100% 70%;
+    --sidebar-ring: 213 14% 34%;
 
     /* Pointer-reactive page glow (updated by useReactiveGlow) */
     --page-glow-x: 50vw;
     --page-glow-y: 50vh;
     --page-glow-d: 0;
+    --font-caveat: "Caveat", "Inter", cursive;
+    --tl-font-draw: var(--font-caveat);
+    --tl-font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
+    --tl-font-serif: "Georgia", "Times New Roman", serif;
+    --tl-font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
   }
 }
 
@@ -73,14 +78,17 @@
   * {
     @apply border-border;
   }
+
   html, body, #root {
     @apply h-full;
   }
+
   body {
     @apply bg-background text-foreground antialiased;
     font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
   }
+
   .font-hand {
     font-family: 'Caveat', 'Inter', cursive;
     letter-spacing: -0.01em;
@@ -94,20 +102,29 @@
       linear-gradient(90deg, hsl(var(--border) / 0.6) 1px, transparent 1px);
     background-size: 28px 28px;
   }
+
   .bg-dotgrid {
     background-image: radial-gradient(hsl(var(--muted-foreground) / 0.18) 1px, transparent 1px);
     background-size: 18px 18px;
   }
-  .surface-elevated { background-color: hsl(var(--surface-elevated)); }
-  .surface-hover:hover { background-color: hsl(var(--surface-hover)); }
+
+  .surface-elevated {
+    background-color: hsl(var(--surface-elevated));
+  }
+
+  .surface-hover:hover {
+    background-color: hsl(var(--surface-hover));
+  }
+
   .text-gradient-brand {
     background: var(--gradient-brand);
     -webkit-background-clip: text;
     background-clip: text;
     color: transparent;
   }
+
   .ring-focus {
-    @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
+    @apply focus-visible: outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background;
   }
 }
 
@@ -132,17 +149,15 @@
   inset: 0;
   border-radius: inherit;
   padding: 2px;
-  background: radial-gradient(
-    200px circle at var(--glow-x) var(--glow-y),
-    hsl(195 100% 78% / calc(var(--glow-d) * 0.95)),
-    hsl(210 100% 68% / calc(var(--glow-d) * 0.65)) 45%,
-    transparent 80%
-  );
+  background: radial-gradient(200px circle at var(--glow-x) var(--glow-y),
+      hsl(195 100% 78% / calc(var(--glow-d) * 0.95)),
+      hsl(210 100% 68% / calc(var(--glow-d) * 0.65)) 45%,
+      transparent 80%);
   -webkit-mask:
     linear-gradient(#000 0 0) content-box,
     linear-gradient(#000 0 0);
   -webkit-mask-composite: xor;
-          mask-composite: exclude;
+  mask-composite: exclude;
   pointer-events: none;
   z-index: 2;
 }
@@ -163,7 +178,9 @@
   z-index: -1;
 }
 
-.reactive-glow:hover { --glow-d: 1; }
+.reactive-glow:hover {
+  --glow-d: 1;
+}
 
 .page-reactive-glow {
   position: fixed;
@@ -173,16 +190,12 @@
   opacity: calc(var(--page-glow-d) * 0.36);
   transition: opacity 0.22s ease;
   background:
-    radial-gradient(
-      180px circle at var(--page-glow-x) var(--page-glow-y),
+    radial-gradient(180px circle at var(--page-glow-x) var(--page-glow-y),
       hsl(195 100% 68% / calc(var(--page-glow-d) * 0.08)),
-      transparent 72%
-    ),
-    radial-gradient(
-      320px circle at var(--page-glow-x) var(--page-glow-y),
+      transparent 72%),
+    radial-gradient(320px circle at var(--page-glow-x) var(--page-glow-y),
       hsl(210 100% 62% / calc(var(--page-glow-d) * 0.05)),
-      transparent 78%
-    );
+      transparent 78%);
   filter: blur(12px);
 }
 
@@ -190,9 +203,306 @@
    Login custom cursor — soft spotlight with mix-blend-mode
    (Disabled - no longer used)
    ============================================================ */
-.cursor-spotlight { cursor: default; }
+.cursor-spotlight {
+  cursor: default;
+}
 
 .cursor-spotlight-pointer,
 .cursor-spotlight-dot {
   display: none;
+}
+
+.sketchmind-canvas {
+  --default-border-color: hsl(var(--border));
+  --sketchmind-toolbar-bg: linear-gradient(160deg, hsl(213 28% 10% / 0.98), hsl(213 30% 7% / 0.99));
+  --sketchmind-toolbar-border: hsl(213 12% 22% / 0.7);
+  --sketchmind-toolbar-shadow:
+    0 24px 60px -34px hsl(0 0% 0% / 0.42),
+    0 10px 28px -20px hsl(0 0% 0% / 0.9),
+    inset 0 1px 0 hsl(0 0% 100% / 0.05);
+  --sketchmind-control-bg: hsl(213 24% 13% / 0.92);
+  --sketchmind-control-hover: hsl(213 28% 18% / 0.98);
+  --sketchmind-control-active: hsl(213 30% 21% / 0.98);
+  --sketchmind-control-border: hsl(213 12% 24% / 0.9);
+  --sketchmind-control-shadow: 0 14px 28px -22px hsl(0 0% 0% / 0.62);
+  position: relative;
+  isolation: isolate;
+}
+
+.sketchmind-canvas::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image:
+    linear-gradient(hsl(var(--border) / 0.45) 1px, transparent 1px),
+    linear-gradient(90deg, hsl(var(--border) / 0.45) 1px, transparent 1px);
+  background-size: 32px 32px;
+  opacity: 0.14;
+  z-index: 0;
+}
+
+.sketchmind-canvas .excalidraw {
+  --color-primary: hsl(var(--primary));
+  --color-primary-darker: hsl(195 100% 64%);
+  --color-primary-darkest: hsl(195 100% 56%);
+  --color-selection: hsl(var(--primary));
+  --color-surface-low: hsl(var(--card));
+  --color-surface-mid: hsl(var(--surface-elevated));
+  --color-surface-high: hsl(var(--accent));
+  --color-on-primary: hsl(var(--primary-foreground));
+  --color-gray-10: hsl(0 0% 100%);
+  --color-gray-20: hsl(0 0% 86%);
+  --color-gray-30: hsl(0 0% 72%);
+  --ui-font: "Inter", ui-sans-serif, system-ui, sans-serif;
+  --default-font-family: var(--tl-font-sans);
+  position: relative;
+  z-index: 1;
+  background: transparent !important;
+}
+
+.sketchmind-canvas .App,
+.sketchmind-canvas .excalidraw-container,
+.sketchmind-canvas .layer-ui__wrapper {
+  background: transparent !important;
+}
+
+.sketchmind-canvas .help-icon,
+.sketchmind-canvas .default-sidebar-trigger,
+.sketchmind-canvas .App-menu_top__left .dropdown-menu-button,
+.sketchmind-canvas .App-menu_top__left .dropdown-menu,
+.sketchmind-canvas .App-toolbar__extra-tools-trigger,
+.sketchmind-canvas .App-toolbar__extra-tools-dropdown {
+  display: none !important;
+}
+
+.sketchmind-canvas .App-toolbar__divider:has(+ .App-toolbar__extra-tools-trigger) {
+  display: none !important;
+}
+
+@keyframes sketchmind-bar-enter {
+  0% {
+    opacity: 0;
+    transform: translateY(-8px) scale(0.985);
+  }
+
+  100% {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes sketchmind-bar-float {
+
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+
+  50% {
+    transform: translateY(-1px);
+  }
+}
+
+.sketchmind-canvas .App-menu_top,
+.sketchmind-canvas .App-menu_bottom {
+  animation: sketchmind-bar-enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.sketchmind-canvas .App-menu_bottom {
+  animation-delay: 80ms;
+}
+
+.sketchmind-canvas .App-menu_top .Island,
+.sketchmind-canvas .App-menu_top .App-toolbar,
+.sketchmind-canvas .layer-ui__wrapper__top-right>.Island,
+.sketchmind-canvas .App-menu_bottom .zoom-actions,
+.sketchmind-canvas .App-menu_bottom .undo-redo-buttons {
+  background: var(--sketchmind-toolbar-bg) !important;
+  border: 1px solid var(--sketchmind-toolbar-border) !important;
+  border-radius: 1.15rem !important;
+  box-shadow: var(--sketchmind-toolbar-shadow) !important;
+  backdrop-filter: blur(18px);
+}
+
+.sketchmind-canvas .App-toolbar__divider {
+  background-color: hsl(198 90% 70% / 0.22) !important;
+}
+
+.sketchmind-canvas .ToolIcon__icon,
+.sketchmind-canvas .dropdown-menu-button,
+.sketchmind-canvas .excalidraw-button,
+.sketchmind-canvas .zoom-button,
+.sketchmind-canvas .undo-redo-buttons button,
+.sketchmind-canvas .reset-zoom-button,
+.sketchmind-canvas .buttonList label,
+.sketchmind-canvas .icon-button,
+.sketchmind-canvas .picker-type-button,
+.sketchmind-canvas .dropdown-menu-item,
+.sketchmind-canvas .color-picker-swatch {
+  background-color: var(--sketchmind-control-bg) !important;
+  border-color: var(--sketchmind-control-border) !important;
+  color: hsl(0 0% 100%) !important;
+  border-radius: 0.95rem !important;
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif !important;
+  font-weight: 600 !important;
+  transition:
+    transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+    box-shadow 220ms ease,
+    background-color 220ms ease,
+    border-color 220ms ease !important;
+  box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.04) !important;
+  overflow: hidden;
+}
+
+.sketchmind-canvas .ToolIcon__icon svg,
+.sketchmind-canvas .dropdown-menu-button svg,
+.sketchmind-canvas .excalidraw-button svg,
+.sketchmind-canvas .zoom-button svg,
+.sketchmind-canvas .undo-redo-buttons button svg,
+.sketchmind-canvas .reset-zoom-button svg,
+.sketchmind-canvas .buttonList label svg,
+.sketchmind-canvas .icon-button svg,
+.sketchmind-canvas .picker-type-button svg,
+.sketchmind-canvas .dropdown-menu-item svg {
+  color: currentColor !important;
+  transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sketchmind-canvas .buttonList input:checked+label,
+.sketchmind-canvas .color-picker-swatch:focus-within,
+.sketchmind-canvas .ToolIcon__icon:focus-within,
+.sketchmind-canvas .ToolIcon__icon[aria-pressed="true"],
+.sketchmind-canvas .ToolIcon__icon.active,
+.sketchmind-canvas .ToolIcon__icon.ToolIcon_type_button--active,
+.sketchmind-canvas .zoom-button.active,
+.sketchmind-canvas .reset-zoom-button.active {
+  background: linear-gradient(135deg, hsl(195 100% 70% / 0.32), hsl(220 95% 72% / 0.24)) !important;
+  border-color: hsl(195 100% 70% / 0.32) !important;
+  box-shadow:
+    0 0 0 1px hsl(195 100% 70% / 0.2) inset,
+    0 16px 28px -22px hsl(195 100% 60% / 0.7) !important;
+}
+
+.sketchmind-canvas .ToolIcon__icon:hover,
+.sketchmind-canvas .dropdown-menu-button:hover,
+.sketchmind-canvas .excalidraw-button:hover,
+.sketchmind-canvas .zoom-button:hover,
+.sketchmind-canvas .undo-redo-buttons button:hover,
+.sketchmind-canvas .reset-zoom-button:hover,
+.sketchmind-canvas .buttonList label:hover,
+.sketchmind-canvas .icon-button:hover,
+.sketchmind-canvas .picker-type-button:hover,
+.sketchmind-canvas .dropdown-menu-item:hover,
+.sketchmind-canvas .color-picker-swatch:hover {
+  transform: translateY(-1px) !important;
+  background-color: var(--sketchmind-control-hover) !important;
+  box-shadow:
+    0 0 0 1px hsl(197 100% 70% / 0.24) inset,
+    var(--sketchmind-control-shadow) !important;
+}
+
+.sketchmind-canvas .ToolIcon__icon:hover svg,
+.sketchmind-canvas .dropdown-menu-button:hover svg,
+.sketchmind-canvas .excalidraw-button:hover svg,
+.sketchmind-canvas .zoom-button:hover svg,
+.sketchmind-canvas .undo-redo-buttons button:hover svg,
+.sketchmind-canvas .reset-zoom-button:hover svg,
+.sketchmind-canvas .buttonList label:hover svg,
+.sketchmind-canvas .icon-button:hover svg,
+.sketchmind-canvas .picker-type-button:hover svg,
+.sketchmind-canvas .dropdown-menu-item:hover svg {
+  transform: scale(1.18) rotate(-12deg);
+}
+
+.sketchmind-canvas .ToolIcon__icon:active,
+.sketchmind-canvas .dropdown-menu-button:active,
+.sketchmind-canvas .excalidraw-button:active,
+.sketchmind-canvas .zoom-button:active,
+.sketchmind-canvas .undo-redo-buttons button:active,
+.sketchmind-canvas .reset-zoom-button:active,
+.sketchmind-canvas .buttonList label:active,
+.sketchmind-canvas .icon-button:active,
+.sketchmind-canvas .picker-type-button:active,
+.sketchmind-canvas .dropdown-menu-item:active,
+.sketchmind-canvas .color-picker-swatch:active {
+  transform: translateY(0) !important;
+  background-color: var(--sketchmind-control-active) !important;
+}
+
+.sketchmind-canvas .ToolIcon__icon:active svg,
+.sketchmind-canvas .dropdown-menu-button:active svg,
+.sketchmind-canvas .excalidraw-button:active svg,
+.sketchmind-canvas .zoom-button:active svg,
+.sketchmind-canvas .undo-redo-buttons button:active svg,
+.sketchmind-canvas .reset-zoom-button:active svg,
+.sketchmind-canvas .buttonList label:active svg,
+.sketchmind-canvas .icon-button:active svg,
+.sketchmind-canvas .picker-type-button:active svg,
+.sketchmind-canvas .dropdown-menu-item:active svg {
+  transform: scale(0.85) rotate(8deg);
+}
+
+.sketchmind-canvas .App-menu_bottom .zoom-actions,
+.sketchmind-canvas .App-menu_bottom .undo-redo-buttons {
+  animation: sketchmind-bar-float 4s ease-in-out infinite;
+}
+
+.sketchmind-canvas .App-menu_top .ToolIcon,
+.sketchmind-canvas .App-menu_top .Stack,
+.sketchmind-canvas .App-menu_bottom .Stack {
+  gap: 0.45rem !important;
+}
+
+.sketchmind-canvas .ToolIcon__label,
+.sketchmind-canvas .ToolIcon_type_button,
+.sketchmind-canvas .App-menu_bottom button {
+  color: hsl(0 0% 100%) !important;
+  font-family: "Inter", ui-sans-serif, system-ui, sans-serif !important;
+}
+
+.sketchmind-canvas .zoom-button:focus-visible,
+.sketchmind-canvas .undo-redo-buttons button:focus-visible,
+.sketchmind-canvas .reset-zoom-button:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px hsl(195 100% 70% / 0.55) !important;
+}
+
+.sketchmind-canvas .react-colorful {
+  width: 100%;
+  height: 216px;
+}
+
+.sketchmind-canvas .react-colorful__saturation {
+  border-bottom-width: 14px;
+  border-radius: 1rem 1rem 0 0;
+  box-shadow: inset 0 0 0 1px hsl(0 0% 100% / 0.06);
+}
+
+.sketchmind-canvas .react-colorful__hue,
+.sketchmind-canvas .react-colorful__alpha,
+.sketchmind-canvas .react-colorful__last-control {
+  height: 26px;
+}
+
+.sketchmind-canvas .react-colorful__hue,
+.sketchmind-canvas .react-colorful__alpha {
+  border-top: 1px solid hsl(0 0% 100% / 0.05);
+}
+
+.sketchmind-canvas .react-colorful__last-control {
+  border-radius: 0 0 1rem 1rem;
+}
+
+.sketchmind-canvas .react-colorful__pointer {
+  width: 20px;
+  height: 20px;
+  border: 2px solid hsl(0 0% 100%);
+  box-shadow:
+    0 0 0 2px hsl(213 30% 8% / 0.45),
+    0 10px 20px -14px hsl(0 0% 0% / 0.8);
+}
+
+.sketchmind-canvas .react-colorful__interactive:focus .react-colorful__pointer {
+  transform: translate(-50%, -50%) scale(1.06);
 }

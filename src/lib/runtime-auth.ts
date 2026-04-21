@@ -27,70 +27,106 @@ export function getRuntimeAuthConfig() {
   return configPromise;
 }
 
-let googleScriptPromise: Promise<void> | null = null;
+function openGoogleAuthPopup() {
+	const width = 520;
+	const height = 700;
+	const dualScreenLeft = (window.screenLeft !== undefined ? window.screenLeft : window.screenX) ?? 0;
+	const dualScreenTop = (window.screenTop !== undefined ? window.screenTop : window.screenY) ?? 0;
+	const outerWidth = window.outerWidth ?? document.documentElement.clientWidth ?? screen.width;
+	const outerHeight = window.outerHeight ?? document.documentElement.clientHeight ?? screen.height;
 
-function loadGoogleScript() {
-  if (!googleScriptPromise) {
-    googleScriptPromise = new Promise((resolve, reject) => {
-      if (window.google?.accounts?.id) {
-        resolve();
-        return;
-      }
+	const left = Math.round(dualScreenLeft + Math.max(0, (outerWidth - width) / 2));
+	const top = Math.round(dualScreenTop + Math.max(0, (outerHeight - height) / 2));
 
-      const existing = document.querySelector<HTMLScriptElement>('script[data-google-sdk="true"]');
-      if (existing) {
-        existing.addEventListener("load", () => resolve(), { once: true });
-        existing.addEventListener("error", () => reject(new Error("Couldn't load Google SDK")), { once: true });
-        return;
-      }
+	const features = `popup=yes,width=${width},height=${height},left=${left},top=${top},resizable,scrollbars`;
+	return window.open("about:blank", "sketchmind-google-signin", features);
+}
 
-      const script = document.createElement("script");
-      script.src = "https://accounts.google.com/gsi/client";
-      script.async = true;
-      script.defer = true;
-      script.dataset.googleSdk = "true";
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error("Couldn't load Google SDK"));
-      document.head.appendChild(script);
-    });
-  }
+function getOrigin(value: string): string | null {
+	try {
+		return new URL(value).origin;
+	} catch {
+		return null;
+	}
+}
 
-  return googleScriptPromise;
+function encodeGoogleState(openerOrigin: string): string {
+	return window.btoa(JSON.stringify({ openerOrigin }));
+}
+
+function waitForGoogleTokenFromPopup(popup: Window, allowedOrigins: Set<string>): Promise<string> {
+	return new Promise((resolve, reject) => {
+		const timeout = window.setTimeout(() => {
+			cleanup();
+			reject(new Error("Google sign-in timed out"));
+		}, 120000);
+
+		const handleMessage = (event: MessageEvent) => {
+			if (!allowedOrigins.has(event.origin)) {
+				return;
+			}
+
+			if (!event.data || event.data.type !== "google-sign-in-code" || typeof event.data.code !== "string") {
+				return;
+			}
+
+			cleanup();
+			resolve(event.data.code);
+		};
+
+		const monitorClose = window.setInterval(() => {
+			if (popup.closed) {
+				cleanup();
+				reject(new Error("Google sign-in was closed"));
+			}
+		}, 250);
+
+		function cleanup() {
+			window.clearTimeout(timeout);
+			window.clearInterval(monitorClose);
+			window.removeEventListener("message", handleMessage);
+		}
+
+		window.addEventListener("message", handleMessage);
+	});
 }
 
 export async function signInWithGoogleClient(): Promise<string> {
-  const config = await getRuntimeAuthConfig();
-  if (!config.googleEnabled || !config.googleClientId) {
-    throw new Error("Google sign-in is not configured");
-  }
+	const popup = openGoogleAuthPopup();
+	if (!popup) {
+		throw new Error("Please allow popups to sign in with Google");
+	}
 
-  await loadGoogleScript();
+	const config = await getRuntimeAuthConfig();
+	if (!config.googleEnabled || !config.googleClientId) {
+		popup.close();
+		throw new Error("Google sign-in is not configured");
+	}
 
-  const idToken = await new Promise<string>((resolve, reject) => {
-    const origin = window.location.origin;
-    const authMisconfiguredError = import.meta.env.DEV
-      ? `Google sign-in is misconfigured for ${origin}. Add this exact origin to Authorized JavaScript origins in your Google OAuth client, not only Authorized redirect URIs.`
-      : "Google sign-in is misconfigured. Check your Google Cloud OAuth client configuration.";
+	const configuredOrigin = getOrigin(config.siteUrl);
+	const redirectBase = configuredOrigin || window.location.origin;
+	const redirectUri = new URL("/login", redirectBase).href;
+	const allowedOrigins = new Set<string>([window.location.origin]);
+	const redirectOrigin = getOrigin(redirectUri);
+	if (redirectOrigin) {
+		allowedOrigins.add(redirectOrigin);
+	}
 
-    window.google.accounts.id.initialize({
-      client_id: config.googleClientId,
-      callback: (response) => {
-        if (!response?.credential) {
-          reject(new Error("Google sign-in failed"));
-          return;
-        }
-        resolve(response.credential);
-      },
-      auto_select: false,
-      cancel_on_tap_outside: false,
-    });
+	const authUrl = new URL("https://accounts.google.com/o/oauth2/v2/auth");
+	authUrl.searchParams.set("client_id", config.googleClientId);
+	authUrl.searchParams.set("redirect_uri", redirectUri);
+	authUrl.searchParams.set("response_type", "code");
+	authUrl.searchParams.set("scope", "openid email profile");
+	authUrl.searchParams.set("prompt", "select_account");
+	authUrl.searchParams.set("include_granted_scopes", "true");
+	authUrl.searchParams.set("state", encodeGoogleState(window.location.origin));
 
-    window.google.accounts.id.prompt((notification) => {
-      if (notification.isNotDisplayed() || notification.isSkippedMoment()) {
-        reject(new Error(authMisconfiguredError));
-      }
-    });
-  });
+	popup.location.href = authUrl.href;
 
-  return idToken;
+	try {
+		return await waitForGoogleTokenFromPopup(popup, allowedOrigins);
+	} catch (error) {
+		popup.close();
+		throw error;
+	}
 }
