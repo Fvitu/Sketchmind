@@ -19,12 +19,18 @@ interface SceneSnapshot {
   serialized: string;
 }
 
-function toSerializedScene(
-  elements: readonly ExcalidrawElement[],
-  appState: AppState,
-  files: BinaryFiles,
-) {
-  return serializeAsJSON(elements, appState, files, "local");
+function toSerializedScene(elements: readonly ExcalidrawElement[], appState: AppState & { sketchmindGridEnabled?: boolean }, files: BinaryFiles) {
+	const json = serializeAsJSON(elements, appState, files, "local");
+	try {
+		const parsed = JSON.parse(json);
+		if (appState.sketchmindGridEnabled !== undefined) {
+			parsed.appState = parsed.appState || {};
+			parsed.appState.sketchmindGridEnabled = appState.sketchmindGridEnabled;
+		}
+		return JSON.stringify(parsed);
+	} catch (e) {
+		return json;
+	}
 }
 
 export function useBoardAutoSave({

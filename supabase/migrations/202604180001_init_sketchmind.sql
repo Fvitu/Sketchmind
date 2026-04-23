@@ -3,6 +3,7 @@ create table if not exists public.profiles (
   email text not null unique,
   display_name text not null,
   avatar_url text,
+  board_limit integer not null default 12 check (board_limit > 0),
   created_at timestamptz not null default now(),
   updated_at timestamptz not null default now()
 );

@@ -2,14 +2,16 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { LayoutGrid, User as UserIcon } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Logo } from "@/components/brand/Logo";
-import { useAuthUser, BOARD_LIMIT } from "@/lib/store";
+import { useAuthUser } from "@/lib/store";
 import { cn } from "@/lib/utils";
 
 const navItemClasses =
-	"group/nav relative flex flex-col items-center justify-center p-[10px_16px] sm:p-[10px_24px] transition-colors duration-100 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary rounded-full";
+	"group/nav relative flex flex-col items-center justify-center p-[6px_16px] sm:p-[6px_20px] transition-colors duration-100 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary rounded-full";
 
 export const AppShell = () => {
 	const user = useAuthUser();
+
+	const location = useLocation();
 
 	if (!user) return null;
 
@@ -37,10 +39,7 @@ export const AppShell = () => {
 					WebkitBackdropFilter: "blur(20px) saturate(180%)",
 					border: "1px solid rgba(255, 255, 255, 0.08)",
 					boxShadow: "0 8px 32px rgba(0, 0, 0, 0.5)",
-					paddingTop: "6px",
-					paddingLeft: "8px",
-					paddingRight: "8px",
-					paddingBottom: "max(6px, env(safe-area-inset-bottom))",
+					padding: "4px 6px",
 				}}>
 				<NavLink
 					to="/dashboard"
@@ -58,11 +57,11 @@ export const AppShell = () => {
 								<motion.div
 									layoutId="active-nav-pill"
 									className="absolute inset-0 bg-[rgba(255,255,255,0.1)] rounded-full"
-									transition={{ duration: 0.15, ease: "easeOut" }}
+									transition={{ type: "spring", stiffness: 400, damping: 35 }}
 								/>
 							)}
-							<LayoutGrid className="relative z-10 h-5 w-5 mb-1" />
-							<span className="relative z-10 text-[11px] font-medium tracking-[0.02em]">Boards</span>
+							<LayoutGrid className="relative z-10 h-[18px] w-[18px] mb-[3px]" />
+							<span className="relative z-10 text-[10px] font-medium tracking-[0.02em]">Boards</span>
 						</>
 					)}
 				</NavLink>
@@ -83,11 +82,11 @@ export const AppShell = () => {
 								<motion.div
 									layoutId="active-nav-pill"
 									className="absolute inset-0 bg-[rgba(255,255,255,0.1)] rounded-full"
-									transition={{ duration: 0.15, ease: "easeOut" }}
+									transition={{ type: "spring", stiffness: 400, damping: 35 }}
 								/>
 							)}
-							<UserIcon className="relative z-10 h-5 w-5 mb-1" />
-							<span className="relative z-10 text-[11px] font-medium tracking-[0.02em]">Profile</span>
+							<UserIcon className="relative z-10 h-[18px] w-[18px] mb-[3px]" />
+							<span className="relative z-10 text-[10px] font-medium tracking-[0.02em]">Profile</span>
 						</>
 					)}
 				</NavLink>
@@ -111,5 +110,3 @@ const AnimatedOutlet = () => {
 		</AnimatePresence>
 	);
 };
-
-export { BOARD_LIMIT };

@@ -14,7 +14,7 @@ const publicDir = path.join(rootDir, "public");
 const envPath = path.join(rootDir, ".env");
 const isProd = process.env.NODE_ENV === "production";
 const port = Number(process.env.PORT || 8080);
-const BOARD_LIMIT = 12;
+const DEFAULT_BOARD_LIMIT = 12;
 const SESSION_COOKIE_NAME = "sketchmind_session";
 const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 const BOARD_ASSET_BUCKET = "board-assets";
@@ -88,6 +88,11 @@ const server = http.createServer(async (req, res) => {
     const boardAssetsPathMatch = url.pathname.match(/^\/api\/boards\/([^/]+)\/assets$/);
 	if (boardAssetsPathMatch) {
 		return await handleBoardAssetUpload(req, res, decodeURIComponent(boardAssetsPathMatch[1]));
+	}
+
+    const boardDuplicatePathMatch = url.pathname.match(/^\/api\/boards\/([^/]+)\/duplicate$/);
+	if (boardDuplicatePathMatch) {
+		return await handleBoardDuplicate(req, res, decodeURIComponent(boardDuplicatePathMatch[1]));
 	}
 
     const boardPathMatch = url.pathname.match(/^\/api\/boards\/([^/]+)$/);
@@ -306,11 +311,25 @@ async function handleBoardsCollection(req, res) {
 
   if (req.method === "POST") {
     const body = await readJson(req);
-    const created = await createBoardForUser(userId, body?.title, body?.id);
+    const created = await createBoardForUser(userId, body?.title, body?.id, body);
     return json(res, 200, { board: created });
   }
 
   return json(res, 405, { error: "Method not allowed" });
+}
+
+async function handleBoardDuplicate(req, res, boardId) {
+	const userId = getSessionUserId(req);
+	if (!userId) {
+		return json(res, 401, { error: "Not signed in" });
+	}
+
+	if (req.method !== "POST") {
+		return json(res, 405, { error: "Method not allowed" });
+	}
+
+	const duplicated = await duplicateBoardForUser(userId, boardId);
+	return json(res, 200, { board: duplicated });
 }
 
 async function handleBoardItem(req, res, boardId) {
@@ -421,7 +440,7 @@ async function registerSessionForIdentity(identity, res) {
 
 async function getUserProfileByEmail(email) {
 	const client = getSupabaseClient();
-	const { data, error } = await client.from("profiles").select("id,email,display_name,avatar_url,created_at").eq("email", email).maybeSingle();
+  const { data, error } = await client.from("profiles").select("*").eq("email", email).maybeSingle();
 
 	if (error) {
 		throw new HttpError(500, userFacingDatabaseError(error.message));
@@ -475,7 +494,7 @@ async function persistUserProfile(identity) {
 				updated_at: now,
 			})
 			.eq("id", existing.id)
-			.select("id,email,display_name,avatar_url,created_at")
+			.select("*")
 			.single();
 
 		if (error || !data) {
@@ -495,7 +514,7 @@ async function persistUserProfile(identity) {
 			created_at: now,
 			updated_at: now,
 		})
-		.select("id,email,display_name,avatar_url,created_at")
+		.select("*")
 		.single();
 
   if (error || !data) {
@@ -511,7 +530,7 @@ async function persistUserProfile(identity) {
 					updated_at: now,
 				})
 				.eq("id", fallback.id)
-				.select("id,email,display_name,avatar_url,created_at")
+				.select("*")
 				.single();
 
 			if (!updateError && updatedData) {
@@ -528,11 +547,7 @@ async function persistUserProfile(identity) {
 
 async function getUserProfileById(userId) {
   const client = getSupabaseClient();
-  const { data, error } = await client
-    .from("profiles")
-    .select("id,email,display_name,avatar_url,created_at")
-    .eq("id", userId)
-    .maybeSingle();
+  const { data, error } = await client.from("profiles").select("*").eq("id", userId).maybeSingle();
 
   if (error) {
     throw new HttpError(500, userFacingDatabaseError(error.message));
@@ -587,46 +602,66 @@ async function getBoardForUser(userId, boardId) {
   };
 }
 
-async function createBoardForUser(userId, rawTitle, rawId) {
-  const client = getSupabaseClient();
-  const title = typeof rawTitle === "string" && rawTitle.trim() ? rawTitle.trim().slice(0, 80) : "Untitled board";
-  const id = typeof rawId === "string" && rawId.trim() ? rawId.trim() : randomUUID();
+async function createBoardForUser(userId, rawTitle, rawId, template = null) {
+	const client = getSupabaseClient();
+	const profile = await getUserProfileById(userId);
+	const boardLimit = profile?.board_limit ?? DEFAULT_BOARD_LIMIT;
+	const title =
+		typeof rawTitle === "string" && rawTitle.trim()
+			? rawTitle.trim().slice(0, 80)
+			: template?.title
+				? `Copy of ${template.title}`.slice(0, 80)
+				: "Untitled board";
+	const id = typeof rawId === "string" && rawId.trim() ? rawId.trim() : randomUUID();
 
-  const { count, error: countError } = await client
-    .from("boards")
-    .select("id", { count: "exact", head: true })
-    .eq("owner_id", userId);
+	const { count, error: countError } = await client.from("boards").select("id", { count: "exact", head: true }).eq("owner_id", userId);
 
-  if (countError) {
-    throw new HttpError(500, userFacingDatabaseError(countError.message));
-  }
+	if (countError) {
+		throw new HttpError(500, userFacingDatabaseError(countError.message));
+	}
 
-  if ((count || 0) >= BOARD_LIMIT) {
-    throw new HttpError(409, `You've reached the ${BOARD_LIMIT} board limit. Delete one to create another.`);
-  }
+	if ((count || 0) >= boardLimit) {
+		throw new HttpError(409, `You've reached the database-defined limit of ${boardLimit} boards. Delete one to create another.`);
+	}
 
-  const now = new Date().toISOString();
-  const { data, error } = await client
-    .from("boards")
-    .insert({
-      id,
-      owner_id: userId,
-      title,
-      description: null,
-      visibility: "private",
-      thumbnail_path: null,
-      canvas_state: null,
-      created_at: now,
-      last_edited_at: now,
-    })
-    .select("id,owner_id,title,description,visibility,thumbnail_path,canvas_state,created_at,last_edited_at")
-    .single();
+	const now = new Date().toISOString();
+	const { data, error } = await client
+		.from("boards")
+		.insert({
+			id,
+			owner_id: userId,
+			title,
+			description: template?.description ?? null,
+			visibility: template?.visibility ?? "private",
+			thumbnail_path: template?.thumbnail_path ?? null,
+			canvas_state: template?.canvas_state ?? null,
+			created_at: now,
+			last_edited_at: now,
+		})
+		.select("id,owner_id,title,description,visibility,thumbnail_path,canvas_state,created_at,last_edited_at")
+		.single();
 
-  if (error || !data) {
-    throw new HttpError(500, userFacingDatabaseError(error?.message || "Couldn't create board"));
-  }
+	if (error || !data) {
+		throw new HttpError(500, userFacingDatabaseError(error?.message || "Couldn't create board"));
+	}
 
-  return data;
+	return data;
+}
+
+async function duplicateBoardForUser(userId, boardId) {
+	const source = await getBoardForUser(userId, boardId);
+	if (!source) {
+		throw new HttpError(404, "Board not found");
+	}
+
+	const clonedCanvasState = source.canvas_state ? JSON.parse(JSON.stringify(source.canvas_state)) : null;
+
+	return await createBoardForUser(userId, `Copy of ${source.title}`, randomUUID(), {
+		description: source.description,
+		visibility: source.visibility,
+		thumbnail_path: source.thumbnail_path,
+		canvas_state: clonedCanvasState,
+	});
 }
 
 async function renameBoardForUser(userId, boardId, rawTitle) {
@@ -776,11 +811,12 @@ async function getBoardAccessForUser(userId, boardId) {
 
 function mapUserRow(row) {
   return {
-    id: row.id,
-    email: row.email,
-    display_name: row.display_name,
-    avatar_url: row.avatar_url,
-    created_at: row.created_at,
+		id: row.id,
+		email: row.email,
+		display_name: row.display_name,
+		avatar_url: row.avatar_url,
+		board_limit: typeof row.board_limit === "number" && row.board_limit > 0 ? row.board_limit : DEFAULT_BOARD_LIMIT,
+		created_at: row.created_at,
   };
 }
 

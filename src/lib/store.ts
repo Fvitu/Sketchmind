@@ -7,13 +7,12 @@ const KEYS = {
 	boards: "sketchmind:boards",
 } as const;
 
-export const BOARD_LIMIT = 12;
-
 export type User = {
 	id: string;
 	email: string;
 	display_name: string;
 	avatar_url: string | null;
+	board_limit: number;
 	created_at: string;
 };
 
@@ -31,6 +30,8 @@ export type Board = {
 	created_at: string;
 	last_edited_at: string;
 };
+
+type BoardCreateTemplate = Partial<Pick<Board, "description" | "visibility" | "thumbnail_path" | "canvas_state">>;
 
 type AuthSnapshot = {
 	user: User | null;
@@ -133,7 +134,6 @@ async function initializeAuth() {
 if (typeof window !== "undefined") {
 	void initializeAuth();
 }
-
 export const auth = {
 	getUser() {
 		return authSnapshot.user;
@@ -255,7 +255,7 @@ export const boards = {
 
 		return payload.board as Board;
 	},
-	async create(_userId: string, title = "Untitled board"): Promise<Board> {
+	async create(_userId: string, title = "Untitled board", template: BoardCreateTemplate = {}): Promise<Board> {
 		const payload = await api<{ board: Board }>(
 			"/api/boards",
 			{
@@ -263,7 +263,11 @@ export const boards = {
 				headers: {
 					"Content-Type": "application/json",
 				},
-				body: JSON.stringify({ title: title.trim() || "Untitled board", id: uid() }),
+				body: JSON.stringify({
+					title: title.trim() || "Untitled board",
+					id: uid(),
+					...template,
+				}),
 			},
 			"Couldn't create board",
 		);
@@ -282,6 +286,18 @@ export const boards = {
 				body: JSON.stringify({ title }),
 			},
 			"Couldn't rename board",
+		);
+
+		emitStore(KEYS.boards);
+		return payload.board;
+	},
+	async duplicate(_userId: string, id: string): Promise<Board> {
+		const payload = await api<{ board: Board }>(
+			`/api/boards/${encodeURIComponent(id)}/duplicate`,
+			{
+				method: "POST",
+			},
+			"Couldn't duplicate board",
 		);
 
 		emitStore(KEYS.boards);

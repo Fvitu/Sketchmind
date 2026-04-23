@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { MoreHorizontal, Pencil, Trash2, Lock } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Lock, Copy } from "lucide-react";
 import { Board } from "@/lib/store";
 import { relativeTime } from "@/lib/format";
 import { exportToSvg } from "@excalidraw/excalidraw";
@@ -80,7 +80,9 @@ const BoardThumbnail = ({ board, palette }: { board: Board; palette: string }) =
 type Props = {
 	board: Board;
 	onRename: (b: Board) => void;
+	onDuplicate: (b: Board) => void;
 	onDelete: (b: Board) => void;
+	isActionsActive?: boolean;
 };
 
 const palettes = [
@@ -91,10 +93,11 @@ const palettes = [
 	"from-[hsl(330_70%_60%/0.22)] to-[hsl(260_70%_55%/0.12)]",
 ];
 
-export const BoardCard = ({ board, onRename, onDelete }: Props) => {
+export const BoardCard = ({ board, onRename, onDuplicate, onDelete, isActionsActive = false }: Props) => {
 	const [open, setOpen] = useState(false);
 	const seed = board.id.charCodeAt(0) + board.id.charCodeAt(board.id.length - 1);
 	const palette = palettes[seed % palettes.length];
+	const triggerActive = open || isActionsActive;
 
 	return (
 		<motion.div
@@ -125,9 +128,10 @@ export const BoardCard = ({ board, onRename, onDelete }: Props) => {
 				<DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
 					<DropdownMenuTrigger asChild>
 						<button
-							className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 transition-opacity"
+							data-active={triggerActive}
+							className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 data-[active=true]:opacity-100 data-[active=true]:bg-accent data-[active=true]:text-foreground transition-opacity"
 							aria-label="Board actions">
-							<motion.div whileHover={{ scale: 1.1, rotate: 360 }} transition={{ duration: 0.45, ease: "easeOut" }}>
+							<motion.div whileHover={triggerActive ? undefined : { scale: 1.1, rotate: 360 }} transition={{ duration: 0.45, ease: "easeOut" }}>
 								<MoreHorizontal className="h-4 w-4" />
 							</motion.div>
 						</button>
@@ -136,6 +140,10 @@ export const BoardCard = ({ board, onRename, onDelete }: Props) => {
 						<DropdownMenuItem onClick={() => onRename(board)} className="group/item gap-2 focus:bg-accent focus:text-foreground">
 							<Pencil className="h-4 w-4 transition-transform duration-200 group-hover/item:scale-125 group-hover/item:-rotate-12" />
 							Rename
+						</DropdownMenuItem>
+						<DropdownMenuItem onClick={() => onDuplicate(board)} className="group/item gap-2 focus:bg-accent focus:text-foreground">
+							<Copy className="h-4 w-4 transition-transform duration-200 group-hover/item:scale-125 group-hover/item:-rotate-12" />
+							Duplicate
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem
