@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
 import { boards as boardsApi } from "@/lib/store";
+import { LiveblocksRoom } from "@/components/board/LiveblocksRoom";
 import { BoardCanvas } from "@/components/board/BoardCanvas";
 import type { CanvasData } from "@/types/canvas";
 
@@ -63,12 +64,24 @@ const BoardPlaceholder = () => {
     return <div className="min-h-screen bg-background" />;
   }
 
+  if (board.visibility === "shared") {
+    return (
+      <LiveblocksRoom
+        boardId={board.id}
+        boardName={board.title}
+        initialCanvasData={board.canvas_state as CanvasData | null}
+        role={board.role ?? "owner"}
+      />
+    );
+  }
+
   return (
     <BoardCanvas
       boardId={board.id}
       boardName={board.title}
       initialCanvasData={board.canvas_state as CanvasData | null}
       role={board.role ?? "owner"}
+      onShared={() => setBoard({ ...board, visibility: "shared" })}
     />
   );
 };

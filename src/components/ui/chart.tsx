@@ -91,7 +91,7 @@ const ChartTooltip = RechartsPrimitive.Tooltip;
 
 const ChartTooltipContent = React.forwardRef<
   HTMLDivElement,
-  React.ComponentProps<typeof RechartsPrimitive.Tooltip> &
+  RechartsPrimitive.TooltipContentProps<RechartsPrimitive.TooltipValueType, string | number> &
     React.ComponentProps<"div"> & {
       hideLabel?: boolean;
       hideIndicator?: boolean;
@@ -167,7 +167,7 @@ const ChartTooltipContent = React.forwardRef<
 
             return (
               <div
-                key={item.dataKey}
+                key={String(item.dataKey ?? item.name ?? index)}
                 className={cn(
                   "flex w-full flex-wrap items-stretch gap-2 [&>svg]:h-2.5 [&>svg]:w-2.5 [&>svg]:text-muted-foreground",
                   indicator === "dot" && "items-center",
@@ -230,7 +230,9 @@ const ChartLegend = RechartsPrimitive.Legend;
 const ChartLegendContent = React.forwardRef<
   HTMLDivElement,
   React.ComponentProps<"div"> &
-    Pick<RechartsPrimitive.LegendProps, "payload" | "verticalAlign"> & {
+    {
+      payload?: ReadonlyArray<RechartsPrimitive.LegendPayload>;
+      verticalAlign?: RechartsPrimitive.LegendProps["verticalAlign"];
       hideIcon?: boolean;
       nameKey?: string;
     }
@@ -275,7 +277,11 @@ const ChartLegendContent = React.forwardRef<
 ChartLegendContent.displayName = "ChartLegend";
 
 // Helper to extract item config from a payload.
-function getPayloadConfigFromPayload(config: ChartConfig, payload: unknown, key: string) {
+function getPayloadConfigFromPayload(
+  config: ChartConfig,
+  payload: RechartsPrimitive.LegendPayload | RechartsPrimitive.TooltipPayloadEntry | undefined,
+  key: string,
+) {
   if (typeof payload !== "object" || payload === null) {
     return undefined;
   }

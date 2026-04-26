@@ -137,6 +137,21 @@ const Dashboard = () => {
 	const handleDelete = async () => {
 		if (!deleteTarget) return;
 
+		// If this is a shared board, leave it instead of deleting
+		if (deleteTarget.owner_id !== user.id) {
+			try {
+				await fetch(`/api/boards/${encodeURIComponent(deleteTarget.id)}/leave`, {
+					method: "DELETE",
+				});
+				toast.success("Removed from your shared boards");
+				setDeleteTarget(null);
+				await refresh();
+			} catch (e) {
+				toast.error(e instanceof Error ? e.message : "Couldn't leave board");
+			}
+			return;
+		}
+
 		try {
 			await boardsApi.remove(user.id, deleteTarget.id);
 			toast.success("Board deleted");

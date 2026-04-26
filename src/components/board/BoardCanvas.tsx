@@ -1,11 +1,7 @@
 import { useCallback, useRef, useState } from "react";
 import { exportToBlob } from "@excalidraw/excalidraw";
-import type {
-  AppState,
-  BinaryFiles,
-  ExcalidrawElement,
-  ExcalidrawImperativeAPI,
-} from "@excalidraw/excalidraw/types";
+import type { AppState, BinaryFiles, ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
+import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 import { BoardHeader } from "@/components/board/BoardHeader";
 import { ExcalidrawCanvas } from "@/components/board/ExcalidrawCanvas";
 import { useBoardAutoSave } from "@/hooks/useBoardAutoSave";
@@ -19,6 +15,7 @@ interface BoardCanvasProps {
   boardName: string;
   initialCanvasData: CanvasData | null;
   role: BoardRole;
+  onShared?: () => void;
 }
 
 export function BoardCanvas({
@@ -26,6 +23,7 @@ export function BoardCanvas({
   boardName,
   initialCanvasData,
   role,
+  onShared,
 }: BoardCanvasProps) {
   const [currentBoardName, setCurrentBoardName] = useState(boardName);
   const [isExporting, setIsExporting] = useState(false);
@@ -105,6 +103,7 @@ export function BoardCanvas({
         onExportPNG={() => {
           void handleExportPng();
         }}
+        onShared={onShared}
       />
 
       <div className="flex-1">

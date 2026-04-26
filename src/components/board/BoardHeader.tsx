@@ -1,12 +1,17 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Download, LoaderCircle, PencilLine } from "lucide-react";
+import { Download, LoaderCircle, PencilLine, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { boards as boardsApi } from "@/lib/store";
 import type { SaveStatus } from "@/types/canvas";
+import { PresenceAvatars } from "./PresenceAvatars";
+import { ShareDialog } from "./ShareDialog";
+import type { useOthers, useSelf } from "@liveblocks/react/suspense";
+
+type ConnectionStatus = "initial" | "connecting" | "connected" | "reconnecting" | "disconnected";
 
 interface BoardHeaderProps {
   boardId: string;
@@ -14,8 +19,13 @@ interface BoardHeaderProps {
   canEdit: boolean;
   isExporting: boolean;
   saveStatus: SaveStatus;
+  connectionStatus?: ConnectionStatus;
+  isOwner?: boolean;
+  self?: ReturnType<typeof useSelf>;
+  others?: ReturnType<typeof useOthers>;
   onBoardNameChange: (nextName: string) => void;
   onExportPNG: () => void;
+  onShared?: () => void;
 }
 
 const saveStatusLabel: Record<SaveStatus, string> = {
@@ -37,13 +47,19 @@ export function BoardHeader({
   boardName,
   canEdit,
   isExporting,
-  saveStatus,
+ saveStatus,
+  connectionStatus,
+  isOwner = false,
+  self,
+  others,
   onBoardNameChange,
   onExportPNG,
+  onShared,
 }: BoardHeaderProps) {
   const [draftName, setDraftName] = useState(boardName);
   const [isEditing, setIsEditing] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
+  const [isShareModalOpen, setIsShareModalOpen] = useState(false);
   const inputRef = useRef<HTMLInputElement | null>(null);
 
   useEffect(() => {
@@ -150,9 +166,36 @@ export function BoardHeader({
         </span>
       )}
 
+
+
+
+
       <span className={cn("min-w-16 text-right text-xs transition-colors", saveStatusTone[saveStatus])}>
         {saveStatusLabel[saveStatus]}
       </span>
+
+      {/* Connection status indicator */}
+      {connectionStatus && (
+        <div className="flex items-center gap-1.5">
+          <div
+            className={cn(
+              "h-1.5 w-1.5 rounded-full transition-colors",
+              connectionStatus === "connected" && "bg-green-500",
+              (connectionStatus === "reconnecting" || connectionStatus === "connecting") && "bg-yellow-500 animate-pulse",
+              (connectionStatus === "initial" || connectionStatus === "disconnected") && "bg-muted-foreground",
+            )}
+            title={connectionStatus}
+          />
+          {connectionStatus === "reconnecting" && (
+            <span className="text-xs text-muted-foreground">Reconnecting...</span>
+          )}
+        </div>
+      )}
+
+      {/* Presence avatars moved next to Export PNG */}
+      {self !== undefined && others !== undefined && (
+        <PresenceAvatars self={self} others={others} />
+      )}
 
       <Button
         type="button"
@@ -169,6 +212,28 @@ export function BoardHeader({
         )}
         Export PNG
       </Button>
+
+      {/* Share button — visible only to the board owner */}
+      {isOwner && (
+        <Button
+          type="button"
+          size="sm"
+          onClick={() => setIsShareModalOpen(true)}
+          className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+        >
+          <Share2 className="h-3.5 w-3.5" />
+          Share
+        </Button>
+      )}
+
+      {/* Share modal */}
+      <ShareDialog
+        boardId={boardId}
+        boardName={boardName}
+        isOpen={isShareModalOpen}
+        onClose={() => setIsShareModalOpen(false)}
+        onShared={onShared}
+      />
     </header>
   );
 }

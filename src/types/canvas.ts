@@ -1,8 +1,5 @@
-import type {
-  AppState,
-  BinaryFiles,
-  ExcalidrawElement,
-} from "@excalidraw/excalidraw/types";
+import type { AppState, BinaryFiles } from "@excalidraw/excalidraw/types";
+import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
 
 export interface CanvasData {
   type: "excalidraw";

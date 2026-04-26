@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
+import { Analytics } from "@vercel/analytics/react";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { AppErrorBoundary } from "@/components/app/AppErrorBoundary";
@@ -10,6 +11,7 @@ import Dashboard from "./pages/Dashboard.tsx";
 import Profile from "./pages/Profile.tsx";
 import BoardPlaceholder from "./pages/BoardPlaceholder.tsx";
 import NotFound from "./pages/NotFound.tsx";
+import JoinBoard from "./pages/JoinBoard.tsx";
 import { RequireAuth } from "./components/layout/RequireAuth.tsx";
 import { AppShell } from "./components/layout/AppShell.tsx";
 import { useReactiveGlow } from "./hooks/useReactiveGlow.ts";
@@ -21,7 +23,7 @@ const pageTransition = {
 	animate: { opacity: 1, y: 0, scale: 1 },
 	exit: { opacity: 0, y: -10, scale: 0.98 },
 	transition: {
-		type: "spring",
+		type: "spring" as const,
 		stiffness: 400,
 		damping: 30,
 		mass: 1,
@@ -56,6 +58,13 @@ const AnimatedRoutes = () => {
           }
         />
 
+        <Route
+          path="/join/:token"
+          element={
+            <motion.div {...pageTransition}><JoinBoard /></motion.div>
+          }
+        />
+
         <Route path="*" element={<motion.div {...pageTransition}><NotFound /></motion.div>} />
       </Routes>
     </AnimatePresence>
@@ -69,6 +78,7 @@ const App = () => {
       <TooltipProvider>
         <AppErrorBoundary>
           <Sonner />
+          <Analytics />
           <BrowserRouter>
             <AnimatedRoutes />
           </BrowserRouter>

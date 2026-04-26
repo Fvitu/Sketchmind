@@ -1,4 +1,4 @@
-import { createHmac, createHash, randomUUID, timingSafeEqual } from "node:crypto";
+import { createHmac, createHash, randomUUID, randomBytes, timingSafeEqual } from "node:crypto";
 import fs from "node:fs/promises";
 import fsSync from "node:fs";
 import path from "node:path";
@@ -6,8 +6,10 @@ import { fileURLToPath } from "node:url";
 import http from "node:http";
 import { createClient } from "@supabase/supabase-js";
 import { OAuth2Client } from "google-auth-library";
+import { Liveblocks } from "@liveblocks/node";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
+const entryFilePath = fileURLToPath(import.meta.url);
 const rootDir = __dirname;
 const distDir = path.join(rootDir, "dist");
 const publicDir = path.join(rootDir, "public");
@@ -32,6 +34,7 @@ const runtimeConfig = {
 
 const googleOAuthClient = createGoogleOAuthClient();
 const supabase = createSupabaseClient();
+const liveblocksClient = createLiveblocksClient();
 let vite = null;
 
 if (!isProd) {
@@ -49,7 +52,7 @@ if (!isProd) {
   }
 }
 
-const server = http.createServer(async (req, res) => {
+export async function handleRequest(req, res) {
   try {
     const url = new URL(req.url || "/", `http://${req.headers.host || `localhost:${port}`}`);
 
@@ -83,6 +86,25 @@ const server = http.createServer(async (req, res) => {
 
     if (url.pathname === "/api/boards") {
       return await handleBoardsCollection(req, res);
+    }
+
+    if (url.pathname === "/api/liveblocks-auth" && req.method === "POST") {
+      return await handleLiveblocksAuth(req, res);
+    }
+
+    const boardSharePathMatch = url.pathname.match(/^\/api\/boards\/([^/]+)\/share$/);
+    if (boardSharePathMatch) {
+      return await handleBoardShare(req, res, decodeURIComponent(boardSharePathMatch[1]));
+    }
+
+    const boardLeavePathMatch = url.pathname.match(/^\/api\/boards\/([^/]+)\/leave$/);
+    if (boardLeavePathMatch) {
+      return await handleBoardLeave(req, res, decodeURIComponent(boardLeavePathMatch[1]));
+    }
+
+    const boardJoinPathMatch = url.pathname.match(/^\/api\/boards\/join\/([^/]+)$/);
+    if (boardJoinPathMatch) {
+      return await handleBoardJoinLookup(req, res, decodeURIComponent(boardJoinPathMatch[1]));
     }
 
     const boardAssetsPathMatch = url.pathname.match(/^\/api\/boards\/([^/]+)\/assets$/);
@@ -120,11 +142,16 @@ const server = http.createServer(async (req, res) => {
     console.error(error);
     return json(res, 500, { error: "Internal server error" });
   }
-});
+}
 
-server.listen(port, () => {
-  console.log(`Sketchmind running at http://localhost:${port}`);
-});
+const isDirectExecution = process.argv[1] && path.resolve(process.argv[1]) === entryFilePath;
+
+if (isDirectExecution) {
+  const server = http.createServer(handleRequest);
+  server.listen(port, () => {
+    console.log(`Sketchmind running at http://localhost:${port}`);
+  });
+}
 
 async function handleMagicLinkRequest(req, res) {
   if (!runtimeConfig.magicLinkEnabled) {
@@ -562,17 +589,44 @@ async function getUserProfileById(userId) {
 
 async function listBoardsForUser(userId) {
   const client = getSupabaseClient();
-  const { data, error } = await client
+  const boardFields = "id,owner_id,title,description,visibility,thumbnail_path,canvas_state,created_at,last_edited_at";
+
+  const { data: ownedBoards, error: ownedError } = await client
     .from("boards")
-    .select("id,owner_id,title,description,visibility,thumbnail_path,canvas_state,created_at,last_edited_at")
+    .select(boardFields)
     .eq("owner_id", userId)
     .order("last_edited_at", { ascending: false });
 
-  if (error) {
-    throw new HttpError(500, userFacingDatabaseError(error.message));
+  if (ownedError) {
+    throw new HttpError(500, userFacingDatabaseError(ownedError.message));
   }
 
-  return data || [];
+  const { data: memberships } = await client
+    .from("board_members")
+    .select("board_id, role, is_shared_with_me")
+    .eq("user_id", userId)
+    .eq("is_shared_with_me", true);
+
+  const sharedBoardIds = (memberships ?? []).map((m) => m.board_id);
+  let sharedBoards = [];
+
+  if (sharedBoardIds.length > 0) {
+    const { data: shared } = await client
+      .from("boards")
+      .select(boardFields)
+      .in("id", sharedBoardIds)
+      .order("last_edited_at", { ascending: false });
+
+    const roleMap = {};
+    for (const m of memberships ?? []) {
+      roleMap[m.board_id] = m.role;
+    }
+
+    sharedBoards = (shared ?? []).map((b) => ({ ...b, role: roleMap[b.id] ?? "editor" }));
+  }
+
+  const owned = (ownedBoards ?? []).map((b) => ({ ...b, role: "owner" }));
+  return [...owned, ...sharedBoards];
 }
 
 async function getBoardForUser(userId, boardId) {
@@ -933,6 +987,210 @@ function createSupabaseClient() {
       autoRefreshToken: false,
     },
   });
+}
+
+function createLiveblocksClient() {
+  const secret = process.env.LIVEBLOCKS_SECRET_KEY || "";
+  if (!secret) {
+    return null;
+  }
+  return new Liveblocks({ secret });
+}
+
+function getLiveblocksClient() {
+  if (!liveblocksClient) {
+    throw new HttpError(503, "Liveblocks is not configured. Add LIVEBLOCKS_SECRET_KEY to .env.");
+  }
+  return liveblocksClient;
+}
+
+const COLLABORATOR_COLORS = [
+  "#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6",
+  "#EC4899", "#06B6D4", "#84CC16", "#F97316", "#6366F1",
+];
+
+function getUserColor(userId) {
+  const hash = userId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+  return COLLABORATOR_COLORS[hash % COLLABORATOR_COLORS.length];
+}
+
+async function handleLiveblocksAuth(req, res) {
+  const userId = getSessionUserId(req);
+  if (!userId) {
+    return json(res, 401, { error: "Unauthorized" });
+  }
+
+  const body = await readJson(req);
+  const { room } = body;
+  if (!room || typeof room !== "string" || !room.startsWith("board-")) {
+    return json(res, 400, { error: "Invalid room ID" });
+  }
+
+  const boardId = room.replace("board-", "");
+  const client = getSupabaseClient();
+
+  // Check the user has access to this board (owner or member)
+  const access = await getBoardAccessForUser(userId, boardId);
+  if (!access) {
+    // Check if the board is shared via link (visibility = 'shared')
+    const { data: board } = await client.from("boards").select("id, visibility").eq("id", boardId).maybeSingle();
+    if (!board || board.visibility !== "shared") {
+      return json(res, 403, { error: "Forbidden" });
+    }
+  }
+
+  // Get the user's profile
+  const profile = await getUserProfileById(userId);
+  const userName = profile?.display_name ?? "Anonymous";
+  const userAvatar = profile?.avatar_url ?? "";
+  const userColor = getUserColor(userId);
+
+  const liveblocks = getLiveblocksClient();
+  const session = liveblocks.prepareSession(userId, {
+    userInfo: {
+      name: userName,
+      email: profile?.email ?? "",
+      avatar: userAvatar,
+      color: userColor,
+    },
+  });
+
+  session.allow(room, session.FULL_ACCESS);
+
+  const { status, body: responseBody } = await session.authorize();
+  res.writeHead(status, { "Content-Type": "application/json" });
+  res.end(responseBody);
+}
+
+async function handleBoardShare(req, res, boardId) {
+  const userId = getSessionUserId(req);
+  if (!userId) {
+    return json(res, 401, { error: "Not signed in" });
+  }
+
+  const client = getSupabaseClient();
+
+  if (req.method === "POST") {
+    // Generate share link — owner only
+    const { data: board, error } = await client
+      .from("boards")
+      .select("id, owner_id, share_token")
+      .eq("id", boardId)
+      .eq("owner_id", userId)
+      .maybeSingle();
+
+    if (error || !board) {
+      return json(res, 404, { error: "Board not found or not owner" });
+    }
+
+    let token = board.share_token;
+    if (!token) {
+      token = randomBytes(16).toString("hex");
+      const { error: updateError } = await client
+        .from("boards")
+        .update({ share_token: token, visibility: "shared" })
+        .eq("id", boardId);
+
+      if (updateError) {
+        return json(res, 500, { error: "Failed to generate share token" });
+      }
+    }
+
+    return json(res, 200, { token, shareUrl: `/join/${token}` });
+  }
+
+  if (req.method === "DELETE") {
+    // Revoke share link — owner only
+    const { error } = await client
+      .from("boards")
+      .update({ share_token: null, visibility: "private" })
+      .eq("id", boardId)
+      .eq("owner_id", userId);
+
+    if (error) {
+      return json(res, 500, { error: "Failed to revoke share link" });
+    }
+
+    return json(res, 200, { ok: true });
+  }
+
+  return json(res, 405, { error: "Method not allowed" });
+}
+
+async function handleBoardLeave(req, res, boardId) {
+  if (req.method !== "DELETE") {
+    return json(res, 405, { error: "Method not allowed" });
+  }
+
+  const userId = getSessionUserId(req);
+  if (!userId) {
+    return json(res, 401, { error: "Not signed in" });
+  }
+
+  const client = getSupabaseClient();
+  const { error } = await client
+    .from("board_members")
+    .delete()
+    .eq("board_id", boardId)
+    .eq("user_id", userId);
+
+  if (error) {
+    return json(res, 500, { error: "Failed to leave board" });
+  }
+
+  return json(res, 200, { ok: true });
+}
+
+async function handleBoardJoinLookup(req, res, token) {
+  if (req.method !== "POST") {
+    return json(res, 405, { error: "Method not allowed" });
+  }
+
+  const userId = getSessionUserId(req);
+  if (!userId) {
+    return json(res, 401, { error: "Not signed in" });
+  }
+
+  const client = getSupabaseClient();
+
+  // Find board by share token
+  const { data: board, error } = await client
+    .from("boards")
+    .select("id, owner_id, visibility, title")
+    .eq("share_token", token)
+    .maybeSingle();
+
+  if (error || !board || board.visibility !== "shared") {
+    return json(res, 404, { error: "Invalid or expired share link" });
+  }
+
+  // Add to board_members if not already owner
+  if (board.owner_id !== userId) {
+    // Check current member count (max 5 collaborators including owner)
+    const { count } = await client
+      .from("board_members")
+      .select("user_id", { count: "exact", head: true })
+      .eq("board_id", board.id);
+
+    if ((count ?? 0) >= 4) {
+      return json(res, 409, { error: "This board has reached the maximum of 5 collaborators" });
+    }
+
+    // Upsert — if already member, this is a no-op
+    await client
+      .from("board_members")
+      .upsert(
+        {
+          board_id: board.id,
+          user_id: userId,
+          role: "editor",
+          is_shared_with_me: true,
+        },
+        { onConflict: "board_id,user_id", ignoreDuplicates: true },
+      );
+  }
+
+  return json(res, 200, { boardId: board.id, boardTitle: board.title });
 }
 
 function getSupabaseClient() {

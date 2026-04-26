@@ -2,7 +2,8 @@ import { createElement, useCallback, useEffect, useMemo, useRef, useState } from
 import { Excalidraw, restore } from "@excalidraw/excalidraw";
 import { HexAlphaColorPicker, HexColorInput } from "react-colorful";
 import { renderToStaticMarkup } from "react-dom/server";
-import type { AppState, ExcalidrawElement, ExcalidrawImperativeAPI, ExcalidrawInitialDataState, Theme } from "@excalidraw/excalidraw/types";
+import type { AppState, ExcalidrawImperativeAPI, ExcalidrawInitialDataState } from "@excalidraw/excalidraw/types";
+import type { ExcalidrawElement, Theme } from "@excalidraw/excalidraw/element/types";
 import {
 	ArrowDown,
 	ArrowUp,
@@ -34,11 +35,11 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { cn } from "@/lib/utils";
 import type { CanvasData } from "@/types/canvas";
 
-const DEFAULT_BACKGROUND_COLOR = "#0b1120";
+const DEFAULT_BACKGROUND_COLOR = "#ffffff";
 const EXCALIDRAW_THEME: Theme = "dark";
 const READABLE_FONT_FAMILY = 2;
 
-const BACKGROUND_SWATCHES = ["#000000", "#0b1120", "#1f2937", "#334155", "#475569", "#ffffff"];
+const BACKGROUND_SWATCHES = ["#ffffff", "#0b1120", "#1f2937", "#334155", "#475569", "#000000"];
 
 const HEX_COLOR_REGEX = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/;
 const RGB_COLOR_REGEX = /^rgba?\(\s*(\d{1,3})\s*,\s*(\d{1,3})\s*,\s*(\d{1,3})(?:\s*,\s*(0|1|0?\.\d+))?\s*\)$/i;
@@ -73,6 +74,20 @@ const CONTEXT_MENU_ICON_RULES = [
 	{ pattern: /^(link|edit link|add link)$/i, Icon: LinkIcon },
 	{ pattern: /^(edit text)$/i, Icon: Pencil },
 ];
+
+const EXCALIDRAW_UI_OPTIONS = {
+	tools: {
+		image: false,
+	},
+	canvasActions: {
+		changeViewBackgroundColor: false,
+		export: false,
+		loadScene: false,
+		saveAsImage: false,
+		saveToActiveFile: false,
+		toggleTheme: false,
+	},
+};
 
 interface RGBAColor {
 	r: number;
@@ -356,7 +371,7 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 		if (initialCanvasData) {
 			const restored = restore(initialCanvasData, null, null);
 			const normalizedElements = restored.elements.map((element) =>
-				element.fontFamily === 4 ? { ...element, fontFamily: READABLE_FONT_FAMILY } : element,
+				"fontFamily" in element && element.fontFamily === 4 ? { ...element, fontFamily: READABLE_FONT_FAMILY } : element,
 			);
 
 			return {
@@ -735,6 +750,16 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 
 	return (
 		<div ref={containerRef} className="sketchmind-canvas relative h-full w-full">
+			<style>
+				{`
+					.sketchmind-canvas .HintViewer { display: none !important; }
+					.sketchmind-canvas .layer-ui__wrapper .collaborators { display: none !important; }
+					.sketchmind-canvas .layer-ui__wrapper .user-list { display: none !important; }
+					.sketchmind-canvas .layer-ui__wrapper .user-list-container { display: none !important; }
+					.sketchmind-canvas .layer-ui__wrapper .FixedSideContainer.top-right { display: none !important; }
+					.sketchmind-canvas .layer-ui__wrapper .UserList__wrapper { display: none !important; }
+				`}
+			</style>
 			<div className="absolute right-3 top-1/2 z-20 -translate-y-1/2 sm:right-4">
 				<div className="flex flex-col gap-2 rounded-[1.15rem] border border-primary/15 bg-[linear-gradient(180deg,hsl(213_28%_11%_/_0.94),hsl(213_30%_8%_/_0.96))] p-2 shadow-[0_18px_48px_-24px_hsl(0_0%_0%_/_0.5),inset_0_1px_0_hsl(0_0%_100%_/_0.06)] backdrop-blur-xl">
 					{BACKGROUND_SWATCHES.map((color) => (
@@ -837,7 +862,7 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 				onChange={handleSceneChange}
 				theme={EXCALIDRAW_THEME}
 				viewModeEnabled={!canEdit}
-				renderTopRightUI={(_isMobile, appState) =>
+				renderTopRightUI={useCallback((_isMobile: boolean, appState: AppState) =>
 					isSmallScreen ? null : (
 						<button
 							type="button"
@@ -850,20 +875,8 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 							<Grid3X3 className="h-4 w-4" />
 						</button>
 					)
-				}
-				UIOptions={{
-					tools: {
-						image: false,
-					},
-					canvasActions: {
-						changeViewBackgroundColor: false,
-						export: false,
-						loadScene: false,
-						saveAsImage: false,
-						saveToActiveFile: false,
-						toggleTheme: false,
-					},
-				}}
+				, [isSmallScreen, handleToggleNativeGrid])}
+				UIOptions={EXCALIDRAW_UI_OPTIONS}
 			/>
 
 			{/* Bottom-center hint bar that mirrors Excalidraw hints */}
