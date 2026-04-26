@@ -5,6 +5,7 @@ import { boards as boardsApi } from "@/lib/store";
 import { LiveblocksRoom } from "@/components/board/LiveblocksRoom";
 import { BoardCanvas } from "@/components/board/BoardCanvas";
 import type { CanvasData } from "@/types/canvas";
+import { LoadingScreen } from "@/components/ui/LoadingScreen";
 
 const BoardPlaceholder = () => {
   const { id } = useParams<{ id: string }>();
@@ -61,7 +62,7 @@ const BoardPlaceholder = () => {
   }, [navigate, status]);
 
   if (status !== "ready" || !board) {
-    return <div className="min-h-screen bg-background" />;
+    return <LoadingScreen message="Loading board..." />;
   }
 
   if (board.visibility === "shared") {

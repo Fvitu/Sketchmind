@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { RoomProvider } from "@liveblocks/react/suspense";
 import "@/liveblocks.config";
 import { LiveblocksProvider } from "@liveblocks/react";
+import { LoadingScreen } from "@/components/ui/LoadingScreen";
 import type { CanvasData } from "@/types/canvas";
 import { CollaborativeCanvas } from "./CollaborativeCanvas";
 
@@ -44,15 +45,7 @@ export function LiveblocksRoom({
 					excalidrawElements: initialElements,
 				}}
 			>
-				<Suspense
-					fallback={
-						<div className="flex h-screen w-screen items-center justify-center bg-background">
-							<span className="text-sm text-muted-foreground animate-pulse">
-								Connecting to room...
-							</span>
-						</div>
-					}
-				>
+				<Suspense fallback={<LoadingScreen message="Connecting to room..." />}>
 					<CollaborativeCanvas
 						boardId={boardId}
 						boardName={boardName}
