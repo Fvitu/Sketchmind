@@ -48,6 +48,9 @@ const CONTEXT_MENU_DANGER_ICON_CLASS = "sketchmind-context-menu-icon--danger";
 const CONTEXT_MENU_SEPARATOR_CLASS = "sketchmind-context-menu-separator";
 const HIDDEN_CONTEXT_MENU_PATTERNS = [/^wrap selection in frame$/i, /^add link$/i, /^copy link to object$/i, /^zen mode$/i];
 const INTERACTIVE_CONTEXT_PATCHED_ATTRIBUTE = "data-sketchmind-interactive-context-patched";
+const MOBILE_GRID_TOGGLE_ATTRIBUTE = "data-sketchmind-mobile-grid-toggle";
+const MOBILE_MAIN_MENU_SELECTOR = "button.dropdown-menu-button.main-menu-trigger.zen-mode-transition.dropdown-menu-button--mobile";
+const MOBILE_BOTTOM_ACTIONS_SELECTOR = ".App-toolbar-content";
 
 const CONTEXT_MENU_ICON_RULES = [
 	{ pattern: /^(cut)$/i, Icon: Scissors },
@@ -85,6 +88,16 @@ function getContextMenuIconMarkup(label: string) {
 		createElement(Icon, {
 			"aria-hidden": "true",
 			size: 14,
+			strokeWidth: 2,
+		}),
+	);
+}
+
+function getGridToggleIconMarkup() {
+	return renderToStaticMarkup(
+		createElement(Grid3X3, {
+			"aria-hidden": "true",
+			size: 18,
 			strokeWidth: 2,
 		}),
 	);
@@ -332,7 +345,10 @@ interface ExcalidrawCanvasProps {
 export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onChange, theme: _theme }: ExcalidrawCanvasProps) {
 	const containerRef = useRef<HTMLDivElement | null>(null);
 	const [hintText, setHintText] = useState<string | null>(null);
+	const [isGridEnabled, setIsGridEnabled] = useState(false);
+	const [isSmallScreen, setIsSmallScreen] = useState(false);
 	const excalidrawAPIRef = useRef<ExcalidrawImperativeAPI | null>(null);
+	const gridEnabledRef = useRef(false);
 	const selectedBackgroundColorRef = useRef(DEFAULT_BACKGROUND_COLOR);
 	const pendingSceneColorRef = useRef<string | null>(null);
 
@@ -389,6 +405,12 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 	}, [initialBackgroundColor]);
 
 	useEffect(() => {
+		const nextGridMode = Boolean(initialData.appState?.gridModeEnabled);
+		gridEnabledRef.current = nextGridMode;
+		setIsGridEnabled(nextGridMode);
+	}, [initialData]);
+
+	useEffect(() => {
 		const api = excalidrawAPIRef.current;
 
 		if (!api) {
@@ -409,6 +431,24 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 			},
 		});
 	}, [selectedBackgroundColor]);
+
+	useEffect(() => {
+		if (typeof window === "undefined") {
+			return;
+		}
+
+		const mediaQuery = window.matchMedia("(max-width: 639px)");
+		const syncViewport = (event?: MediaQueryListEvent) => {
+			setIsSmallScreen(event?.matches ?? mediaQuery.matches);
+		};
+
+		syncViewport();
+		mediaQuery.addEventListener("change", syncViewport);
+
+		return () => {
+			mediaQuery.removeEventListener("change", syncViewport);
+		};
+	}, []);
 
 	useEffect(() => {
 		const container = containerRef.current;
@@ -570,6 +610,9 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 		(elements: readonly ExcalidrawElement[], appState: AppState, files: CanvasData["files"]) => {
 			const sceneBackgroundColor = normalizeSceneBackgroundColor(appState.viewBackgroundColor);
 			const pendingSceneColor = pendingSceneColorRef.current;
+			const nextGridMode = Boolean(appState.gridModeEnabled);
+			gridEnabledRef.current = nextGridMode;
+			setIsGridEnabled(nextGridMode);
 
 			if (pendingSceneColor) {
 				if (sceneBackgroundColor === pendingSceneColor) {
@@ -605,14 +648,90 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 			return;
 		}
 
-		const appState = api.getAppState();
+		const nextGridMode = !gridEnabledRef.current;
+		gridEnabledRef.current = nextGridMode;
+		setIsGridEnabled(nextGridMode);
 		api.updateScene({
 			appState: {
-				gridModeEnabled: !appState.gridModeEnabled,
+				gridModeEnabled: nextGridMode,
 				objectsSnapModeEnabled: false,
 			},
 		});
 	}, []);
+
+	useEffect(() => {
+		const container = containerRef.current;
+
+		if (!container || !isSmallScreen) {
+			return;
+		}
+
+		let rafId: number | null = null;
+
+		const syncMobileGridToggle = () => {
+			const api = excalidrawAPIRef.current;
+			const bottomBar = container.querySelector<HTMLElement>(MOBILE_BOTTOM_ACTIONS_SELECTOR);
+
+			if (!bottomBar) {
+				return;
+			}
+
+			const mainMenuButton = bottomBar.querySelector<HTMLButtonElement>(MOBILE_MAIN_MENU_SELECTOR);
+			if (mainMenuButton) {
+				mainMenuButton.style.display = "none";
+				mainMenuButton.setAttribute("aria-hidden", "true");
+				mainMenuButton.tabIndex = -1;
+			}
+
+			let gridButton = bottomBar.querySelector<HTMLButtonElement>(`button[${MOBILE_GRID_TOGGLE_ATTRIBUTE}="true"]`);
+
+			if (!gridButton) {
+				gridButton = document.createElement("button");
+				gridButton.type = "button";
+				gridButton.className = "dropdown-menu-button zen-mode-transition dropdown-menu-button--mobile sketchmind-mobile-grid-toggle";
+				gridButton.setAttribute(MOBILE_GRID_TOGGLE_ATTRIBUTE, "true");
+				gridButton.setAttribute("aria-label", "Toggle Grid Overlay");
+				gridButton.setAttribute("title", "Toggle Grid Overlay");
+				gridButton.innerHTML = getGridToggleIconMarkup();
+				gridButton.addEventListener("click", handleToggleNativeGrid);
+				const anchor = mainMenuButton?.nextElementSibling;
+				if (anchor) {
+					anchor.before(gridButton);
+				} else {
+					bottomBar.appendChild(gridButton);
+				}
+			}
+
+			const isActive = api ? Boolean(api.getAppState().gridModeEnabled) : isGridEnabled;
+			gridButton.classList.toggle("active", isActive);
+			gridButton.setAttribute("aria-pressed", String(isActive));
+		};
+
+		syncMobileGridToggle();
+
+		const observer = new MutationObserver(() => {
+			if (rafId !== null) {
+				cancelAnimationFrame(rafId);
+			}
+
+			rafId = requestAnimationFrame(() => {
+				syncMobileGridToggle();
+				rafId = null;
+			});
+		});
+
+		observer.observe(container, { childList: true, subtree: true });
+
+		return () => {
+			observer.disconnect();
+			if (rafId !== null) {
+				cancelAnimationFrame(rafId);
+			}
+
+			const gridButton = container.querySelector<HTMLButtonElement>(`button[${MOBILE_GRID_TOGGLE_ATTRIBUTE}="true"]`);
+			gridButton?.removeEventListener("click", handleToggleNativeGrid);
+		};
+	}, [handleToggleNativeGrid, isGridEnabled, isSmallScreen]);
 
 	return (
 		<div ref={containerRef} className="sketchmind-canvas relative h-full w-full">
@@ -718,18 +837,20 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 				onChange={handleSceneChange}
 				theme={EXCALIDRAW_THEME}
 				viewModeEnabled={!canEdit}
-				renderTopRightUI={(_isMobile, appState) => (
-					<button
-						type="button"
-						className={cn(
-							"p-2 rounded-md transition-colors",
-							appState.gridModeEnabled ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground",
-						)}
-						onClick={handleToggleNativeGrid}
-						title="Toggle Grid Overlay">
-						<Grid3X3 className="w-4 h-4" />
-					</button>
-				)}
+				renderTopRightUI={(_isMobile, appState) =>
+					isSmallScreen ? null : (
+						<button
+							type="button"
+							className={cn(
+								"p-2 rounded-md transition-colors",
+								appState.gridModeEnabled ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+							)}
+							onClick={handleToggleNativeGrid}
+							title="Toggle Grid Overlay">
+							<Grid3X3 className="h-4 w-4" />
+						</button>
+					)
+				}
 				UIOptions={{
 					tools: {
 						image: false,
@@ -747,10 +868,10 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 
 			{/* Bottom-center hint bar that mirrors Excalidraw hints */}
 			<div
-				aria-hidden={!hintText}
+				aria-hidden={!hintText || isSmallScreen}
 				className={cn(
 					"pointer-events-none absolute left-1/2 bottom-6 z-50 -translate-x-1/2 rounded-xl px-4 py-2 text-sm text-muted-foreground transition-opacity",
-					!hintText ? "opacity-0" : "opacity-100",
+					!hintText || isSmallScreen ? "opacity-0" : "opacity-100",
 				)}>
 				<div className="pointer-events-auto rounded-xl bg-background/70 px-3 py-1 shadow-md backdrop-blur">{hintText}</div>
 			</div>

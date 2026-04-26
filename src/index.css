@@ -338,6 +338,8 @@
 .sketchmind-canvas .undo-redo-buttons button,
 .sketchmind-canvas .reset-zoom-button,
 .sketchmind-canvas .buttonList label,
+.sketchmind-canvas .buttonList button,
+.sketchmind-canvas button.standalone,
 .sketchmind-canvas .icon-button,
 .sketchmind-canvas .picker-type-button,
 .sketchmind-canvas .dropdown-menu-item,
@@ -364,6 +366,8 @@
 .sketchmind-canvas .undo-redo-buttons button svg,
 .sketchmind-canvas .reset-zoom-button svg,
 .sketchmind-canvas .buttonList label svg,
+.sketchmind-canvas .buttonList button svg,
+.sketchmind-canvas button.standalone svg,
 .sketchmind-canvas .icon-button svg,
 .sketchmind-canvas .picker-type-button svg,
 .sketchmind-canvas .dropdown-menu-item svg {
@@ -377,6 +381,8 @@
 .sketchmind-canvas .ToolIcon__icon[aria-pressed="true"],
 .sketchmind-canvas .ToolIcon__icon.active,
 .sketchmind-canvas .ToolIcon__icon.ToolIcon_type_button--active,
+.sketchmind-canvas .buttonList button.active,
+.sketchmind-canvas button.standalone.active,
 .sketchmind-canvas .zoom-button.active,
 .sketchmind-canvas .reset-zoom-button.active {
   background: rgba(34, 211, 238, 0.18) !important;
@@ -393,6 +399,8 @@
 .sketchmind-canvas .undo-redo-buttons button:hover,
 .sketchmind-canvas .reset-zoom-button:hover,
 .sketchmind-canvas .buttonList label:hover,
+.sketchmind-canvas .buttonList button:hover,
+.sketchmind-canvas button.standalone:hover,
 .sketchmind-canvas .icon-button:hover,
 .sketchmind-canvas .picker-type-button:hover,
 .sketchmind-canvas .dropdown-menu-item:hover,
@@ -410,7 +418,9 @@
 .sketchmind-canvas .zoom-button:hover svg,
 .sketchmind-canvas .undo-redo-buttons button:hover svg,
 .sketchmind-canvas .reset-zoom-button:hover svg,
-.sketchmind-canvas .buttonList label:hover > svg,
+.sketchmind-canvas .buttonList label:hover>svg,
+.sketchmind-canvas .buttonList button:hover svg,
+.sketchmind-canvas button.standalone:hover svg,
 .sketchmind-canvas .icon-button:hover svg,
 .sketchmind-canvas .picker-type-button:hover svg,
 .sketchmind-canvas .dropdown-menu-item:hover svg {
@@ -424,6 +434,8 @@
 .sketchmind-canvas .undo-redo-buttons button:active,
 .sketchmind-canvas .reset-zoom-button:active,
 .sketchmind-canvas .buttonList label:active,
+.sketchmind-canvas .buttonList button:active,
+.sketchmind-canvas button.standalone:active,
 .sketchmind-canvas .icon-button:active,
 .sketchmind-canvas .picker-type-button:active,
 .sketchmind-canvas .dropdown-menu-item:active,
@@ -438,7 +450,9 @@
 .sketchmind-canvas .zoom-button:active svg,
 .sketchmind-canvas .undo-redo-buttons button:active svg,
 .sketchmind-canvas .reset-zoom-button:active svg,
-.sketchmind-canvas .buttonList label:active > svg,
+.sketchmind-canvas .buttonList label:active>svg,
+.sketchmind-canvas .buttonList button:active svg,
+.sketchmind-canvas button.standalone:active svg,
 .sketchmind-canvas .icon-button:active svg,
 .sketchmind-canvas .picker-type-button:active svg,
 .sketchmind-canvas .dropdown-menu-item:active svg {
@@ -625,6 +639,55 @@
 .sketchmind-canvas .panelColumn .ToolIcon.ToolIcon_type_button.ToolIcon_size_medium .ToolIcon__icon svg {
   width: 15px !important;
   height: 15px !important;
+}
+
+.sketchmind-canvas .panelColumn .FontPicker__container .buttonList button,
+.sketchmind-canvas .panelColumn .FontPicker__container .properties-trigger.standalone,
+.sketchmind-canvas .panelColumn .iconSelectList.buttonList button,
+.sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-option,
+.sketchmind-canvas .picker[aria-label="arrowhead_end"] .picker-option {
+  min-width: 34px !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+}
+
+.sketchmind-canvas .panelColumn .FontPicker__container .buttonList button svg,
+.sketchmind-canvas .panelColumn .FontPicker__container .properties-trigger.standalone svg,
+.sketchmind-canvas .panelColumn .iconSelectList.buttonList button svg,
+.sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-option svg,
+.sketchmind-canvas .picker[aria-label="arrowhead_end"] .picker-option svg {
+  width: 15px !important;
+  height: 15px !important;
+}
+
+.sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-content,
+.sketchmind-canvas .picker[aria-label="arrowhead_end"] .picker-content {
+  display: grid !important;
+  grid-template-columns: repeat(4, minmax(0, 34px));
+  gap: 8px !important;
+}
+
+.sketchmind-canvas .sidebar:has(.App-menu__left .properties-content),
+.sketchmind-canvas .App-menu__left:has(.properties-content),
+.sketchmind-canvas .App-menu__left:has(.picker[aria-label="arrowhead_start"]),
+.sketchmind-canvas .App-menu__left:has(.picker[aria-label="arrowhead_end"]) {
+  overflow: visible !important;
+}
+
+.sketchmind-canvas .App-menu__left:has(.properties-content),
+.sketchmind-canvas .App-menu__left:has(.picker[aria-label="arrowhead_start"]),
+.sketchmind-canvas .App-menu__left:has(.picker[aria-label="arrowhead_end"]) {
+  position: relative;
+  z-index: 2;
+}
+
+.sketchmind-canvas .popover:has(.properties-content),
+.sketchmind-canvas .popover:has(.picker[aria-label="arrowhead_start"]),
+.sketchmind-canvas .popover:has(.picker[aria-label="arrowhead_end"]) {
+  z-index: calc(var(--zIndex-popup) + 2) !important;
 }
 
 .sketchmind-canvas .scroll-back-to-content {
@@ -892,7 +955,7 @@
 #sketchmind-canvas-wrapper .dropdown-menu-button,
 #sketchmind-canvas-wrapper .excalidraw-button,
 #sketchmind-canvas-wrapper .buttonList label,
-#sketchmind-canvas-wrapper .buttonList button,
+#sketchmind-canvas-wrapper .buttonList button:not(.picker-option),
 #sketchmind-canvas-wrapper .buttonList .zIndexButton,
 #sketchmind-canvas-wrapper .icon-button,
 #sketchmind-canvas-wrapper .picker-type-button,
@@ -1102,8 +1165,8 @@
   color: rgba(255, 255, 255, 0.88) !important;
 }
 
-.panelColumn > .color-picker-control-container .color-picker-label-swatch,
-.panelColumn > .color-picker-control-container .color-picker__button.active-color {
+.panelColumn>.color-picker-control-container .color-picker-label-swatch,
+.panelColumn>.color-picker-control-container .color-picker__button.active-color {
   border-radius: 999px !important;
   width: 40px !important;
   height: 40px !important;
@@ -1112,21 +1175,21 @@
   aspect-ratio: 1 / 1;
 }
 
-.panelColumn > .color-picker-control-container .color-picker__button-outline,
-.panelColumn > .color-picker-control-container .properties-trigger,
-.panelColumn > .color-picker-control-container .color-picker__button.active-color {
+.panelColumn>.color-picker-control-container .color-picker__button-outline,
+.panelColumn>.color-picker-control-container .properties-trigger,
+.panelColumn>.color-picker-control-container .color-picker__button.active-color {
   border-radius: 999px !important;
 }
 
-.panelColumn > .color-picker-control-container,
-.panelColumn > .color-picker-control-container .color-picker-container {
+.panelColumn>.color-picker-control-container,
+.panelColumn>.color-picker-control-container .color-picker-container {
   display: grid;
   grid-template-columns: auto 1fr auto;
   gap: 10px;
   align-items: center;
 }
 
-.panelColumn > .color-picker-control-container {
+.panelColumn>.color-picker-control-container {
   border-radius: 999px !important;
   border: 1px solid rgba(255, 255, 255, 0.08) !important;
   background: rgba(255, 255, 255, 0.03) !important;
@@ -1134,18 +1197,18 @@
   min-height: 60px;
 }
 
-.panelColumn > .color-picker-control-container .color-picker-container {
+.panelColumn>.color-picker-control-container .color-picker-container {
   width: 100%;
   grid-template-columns: auto minmax(0, 1fr) auto;
 }
 
-.panelColumn > .color-picker-control-container .color-picker-label-swatch,
-.panelColumn > .color-picker-control-container .properties-trigger,
-.panelColumn > .color-picker-control-container .color-picker__button.active-color {
+.panelColumn>.color-picker-control-container .color-picker-label-swatch,
+.panelColumn>.color-picker-control-container .properties-trigger,
+.panelColumn>.color-picker-control-container .color-picker__button.active-color {
   justify-self: end;
 }
 
-.panelColumn > .color-picker-control-container .color-picker-label-swatch {
+.panelColumn>.color-picker-control-container .color-picker-label-swatch {
   padding: 0 10px !important;
   min-width: auto !important;
   width: auto !important;
@@ -1154,7 +1217,7 @@
   background: rgba(255, 255, 255, 0.05) !important;
 }
 
-.panelColumn > .color-picker-control-container .color-picker-label-swatch > span {
+.panelColumn>.color-picker-control-container .color-picker-label-swatch>span {
   color: rgba(255, 255, 255, 0.88) !important;
   font-size: 13px !important;
   font-weight: 600 !important;
@@ -1205,7 +1268,7 @@
   transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1) !important;
 }
 
-.excalidraw .panelColumn .buttonList input:checked + label,
+.excalidraw .panelColumn .buttonList input:checked+label,
 .excalidraw .panelColumn .buttonList label.active,
 .excalidraw .panelColumn .buttonList button.active {
   background: rgba(34, 211, 238, 0.18) !important;
@@ -1216,19 +1279,19 @@
     0 12px 24px -18px rgba(34, 211, 238, 0.75) !important;
 }
 
-.excalidraw .panelColumn .buttonList input:checked + label:hover,
+.excalidraw .panelColumn .buttonList input:checked+label:hover,
 .excalidraw .panelColumn .buttonList label.active:hover,
 .excalidraw .panelColumn .buttonList button.active:hover {
   background: rgba(34, 211, 238, 0.18) !important;
   border-color: rgba(34, 211, 238, 0.36) !important;
 }
 
-.excalidraw .panelColumn .buttonList label:hover > svg,
-.excalidraw .panelColumn .buttonList label:focus-visible > svg {
+.excalidraw .panelColumn .buttonList label:hover>svg,
+.excalidraw .panelColumn .buttonList label:focus-visible>svg {
   transform: scale(1.18) rotate(-12deg);
 }
 
-.excalidraw .panelColumn .buttonList label:active > svg {
+.excalidraw .panelColumn .buttonList label:active>svg {
   transform: scale(0.85) rotate(8deg);
 }
 
@@ -1570,6 +1633,68 @@
   transform: scale(0.88);
 }
 
+#sketchmind-canvas-wrapper .panelColumn .FontPicker__container .buttonList button,
+#sketchmind-canvas-wrapper .panelColumn .FontPicker__container .properties-trigger.standalone,
+#sketchmind-canvas-wrapper .panelColumn .iconSelectList.buttonList button {
+  min-width: 34px !important;
+  width: 34px !important;
+  height: 34px !important;
+  min-height: 34px !important;
+  padding: 0 !important;
+  border-radius: 999px !important;
+}
+
+#sketchmind-canvas-wrapper .panelColumn .FontPicker__container .buttonList button svg,
+#sketchmind-canvas-wrapper .panelColumn .FontPicker__container .properties-trigger.standalone svg,
+#sketchmind-canvas-wrapper .panelColumn .iconSelectList.buttonList button svg {
+  width: 15px !important;
+  height: 15px !important;
+}
+
+#sketchmind-canvas-wrapper .picker[aria-label="arrowhead_start"] .picker-option,
+#sketchmind-canvas-wrapper .picker[aria-label="arrowhead_end"] .picker-option {
+  width: 100% !important;
+  min-width: 0 !important;
+  height: 44px !important;
+  min-height: 44px !important;
+  padding: 0 4px !important;
+  border-radius: 10px !important;
+}
+
+#sketchmind-canvas-wrapper .picker[aria-label="arrowhead_start"] .picker-option svg,
+#sketchmind-canvas-wrapper .picker[aria-label="arrowhead_end"] .picker-option svg {
+  width: 32px !important;
+  height: 16px !important;
+}
+
+#sketchmind-canvas-wrapper .picker[aria-label="arrowhead_start"] .picker-content,
+#sketchmind-canvas-wrapper .picker[aria-label="arrowhead_end"] .picker-content {
+  display: grid !important;
+  grid-template-columns: repeat(4, 1fr) !important;
+  gap: 6px !important;
+  width: 100% !important;
+}
+
+#sketchmind-canvas-wrapper .sidebar:has(.App-menu__left .properties-content),
+#sketchmind-canvas-wrapper .App-menu__left:has(.properties-content),
+#sketchmind-canvas-wrapper .App-menu__left:has(.picker[aria-label="arrowhead_start"]),
+#sketchmind-canvas-wrapper .App-menu__left:has(.picker[aria-label="arrowhead_end"]) {
+  overflow: visible !important;
+}
+
+#sketchmind-canvas-wrapper .App-menu__left:has(.properties-content),
+#sketchmind-canvas-wrapper .App-menu__left:has(.picker[aria-label="arrowhead_start"]),
+#sketchmind-canvas-wrapper .App-menu__left:has(.picker[aria-label="arrowhead_end"]) {
+  position: relative;
+  z-index: 2;
+}
+
+#sketchmind-canvas-wrapper .popover:has(.properties-content),
+#sketchmind-canvas-wrapper .popover:has(.picker[aria-label="arrowhead_start"]),
+#sketchmind-canvas-wrapper .popover:has(.picker[aria-label="arrowhead_end"]) {
+  z-index: calc(var(--zIndex-popup) + 2) !important;
+}
+
 #sketchmind-canvas-wrapper .App-bottom-bar {
   display: none !important;
 }
@@ -1615,6 +1740,47 @@
   #sketchmind-canvas-wrapper .sidebar {
     width: min(320px, calc(100vw - 2rem)) !important;
   }
+
+  #sketchmind-canvas-wrapper .panelColumn .FontPicker__container .buttonList button,
+  #sketchmind-canvas-wrapper .panelColumn .FontPicker__container .properties-trigger.standalone,
+  #sketchmind-canvas-wrapper .panelColumn .iconSelectList.buttonList button,
+  #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_start"] .picker-option,
+  #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_end"] .picker-option {
+    width: 100% !important;
+    min-width: 0 !important;
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_start"] .picker-content,
+  #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_end"] .picker-content {
+    grid-template-columns: repeat(4, 1fr) !important;
+  }
+
+  .sketchmind-canvas .panelColumn .FontPicker__container .buttonList button,
+  .sketchmind-canvas .panelColumn .FontPicker__container .properties-trigger.standalone,
+  .sketchmind-canvas .panelColumn .iconSelectList.buttonList button,
+  .sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-option,
+  .sketchmind-canvas .picker[aria-label="arrowhead_end"] .picker-option {
+    min-width: 36px !important;
+    width: 36px !important;
+    height: 36px !important;
+    min-height: 36px !important;
+  }
+
+  .sketchmind-canvas .panelColumn .FontPicker__container .buttonList button svg,
+  .sketchmind-canvas .panelColumn .FontPicker__container .properties-trigger.standalone svg,
+  .sketchmind-canvas .panelColumn .iconSelectList.buttonList button svg,
+  .sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-option svg,
+  .sketchmind-canvas .picker[aria-label="arrowhead_end"] .picker-option svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-content,
+  .sketchmind-canvas .picker[aria-label="arrowhead_end"] .picker-content {
+    grid-template-columns: repeat(4, minmax(0, 36px));
+  }
 }
 
 @media (max-width: 639px) {
@@ -1632,7 +1798,7 @@
     max-width: calc(100vw - 16px) !important;
     min-width: calc(100vw - 16px) !important;
     padding: 6px !important;
-    border-radius: 14px !important;
+    border-radius: 1.15rem !important;
   }
 
   #sketchmind-canvas-wrapper .App-toolbar-container {
@@ -1674,10 +1840,226 @@
   }
 
   #sketchmind-canvas-wrapper .mobile-misc-tools-container,
-  #sketchmind-canvas-wrapper .App-toolbar--mobile,
-  #sketchmind-canvas-wrapper .App-bottom-bar,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile {
+    display: flex !important;
+  }
+
   #sketchmind-canvas-wrapper .footer-center {
     display: none !important;
+  }
+
+  #sketchmind-canvas-wrapper .App-menu_top {
+    animation: sketchmind-bar-enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  #sketchmind-canvas-wrapper .App-menu_top .Island,
+  #sketchmind-canvas-wrapper .App-menu_top .App-toolbar,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile {
+    background: linear-gradient(160deg, hsl(213 28% 9% / 0.98), hsl(213 30% 6% / 0.99)) !important;
+    border: 1px solid hsl(213 12% 20% / 0.82) !important;
+    box-shadow:
+      0 24px 60px -34px hsl(0 0% 0% / 0.42),
+      0 10px 28px -20px hsl(0 0% 0% / 0.9),
+      inset 0 1px 0 hsl(0 0% 100% / 0.05) !important;
+    backdrop-filter: blur(18px);
+    border-radius: 1.15rem !important;
+  }
+
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile {
+    padding: 6px !important;
+  }
+
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .Stack.Stack_horizontal {
+    gap: 0.45rem !important;
+  }
+
+  #sketchmind-canvas-wrapper .App-menu_top .ToolIcon__icon,
+  #sketchmind-canvas-wrapper .App-menu_top .dropdown-menu-button,
+  #sketchmind-canvas-wrapper .App-menu_top .excalidraw-button,
+  #sketchmind-canvas-wrapper .App-menu_top .icon-button,
+  #sketchmind-canvas-wrapper .App-menu_top .picker-type-button,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .ToolIcon__icon,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .dropdown-menu-button,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .excalidraw-button,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .icon-button,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .picker-type-button {
+    background-color: var(--sketchmind-control-bg) !important;
+    border-color: var(--sketchmind-control-border) !important;
+    color: hsl(0 0% 100%) !important;
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.04) !important;
+    border-radius: 0.95rem !important;
+  }
+
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon,
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button,
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .excalidraw-button,
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .icon-button,
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .picker-type-button {
+    transform: translateY(0) !important;
+  }
+
+  #sketchmind-canvas-wrapper .App-menu_top .ToolIcon__icon:hover,
+  #sketchmind-canvas-wrapper .App-menu_top .dropdown-menu-button:hover,
+  #sketchmind-canvas-wrapper .App-menu_top .excalidraw-button:hover,
+  #sketchmind-canvas-wrapper .App-menu_top .icon-button:hover,
+  #sketchmind-canvas-wrapper .App-menu_top .picker-type-button:hover,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .ToolIcon__icon:hover,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .dropdown-menu-button:hover,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .excalidraw-button:hover,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .icon-button:hover,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .picker-type-button:hover,
+  #sketchmind-canvas-wrapper .App-menu_top .ToolIcon__icon:active,
+  #sketchmind-canvas-wrapper .App-menu_top .dropdown-menu-button:active,
+  #sketchmind-canvas-wrapper .App-menu_top .excalidraw-button:active,
+  #sketchmind-canvas-wrapper .App-menu_top .icon-button:active,
+  #sketchmind-canvas-wrapper .App-menu_top .picker-type-button:active,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .ToolIcon__icon:active,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .dropdown-menu-button:active,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .excalidraw-button:active,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .icon-button:active,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .picker-type-button:active {
+    background-color: var(--sketchmind-control-active) !important;
+  }
+
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon:hover,
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button:hover,
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .excalidraw-button:hover,
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .icon-button:hover,
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .picker-type-button:hover {
+    transform: translateY(-1px) !important;
+    background-color: var(--sketchmind-control-hover) !important;
+    box-shadow:
+      0 0 0 1px hsl(197 100% 70% / 0.24) inset,
+      var(--sketchmind-control-shadow) !important;
+  }
+
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon:active,
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button:active,
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .excalidraw-button:active,
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .icon-button:active,
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .picker-type-button:active {
+    transform: translateY(0) !important;
+    background-color: var(--sketchmind-control-active) !important;
+  }
+
+  #sketchmind-canvas-wrapper .App-menu_top .ToolIcon__icon:hover svg,
+  #sketchmind-canvas-wrapper .App-menu_top .dropdown-menu-button:hover svg,
+  #sketchmind-canvas-wrapper .App-menu_top .excalidraw-button:hover svg,
+  #sketchmind-canvas-wrapper .App-menu_top .icon-button:hover svg,
+  #sketchmind-canvas-wrapper .App-menu_top .picker-type-button:hover svg,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .ToolIcon__icon:hover svg,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .dropdown-menu-button:hover svg,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .excalidraw-button:hover svg,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .icon-button:hover svg,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .picker-type-button:hover svg,
+  #sketchmind-canvas-wrapper .App-menu_top .ToolIcon__icon:active svg,
+  #sketchmind-canvas-wrapper .App-menu_top .dropdown-menu-button:active svg,
+  #sketchmind-canvas-wrapper .App-menu_top .excalidraw-button:active svg,
+  #sketchmind-canvas-wrapper .App-menu_top .icon-button:active svg,
+  #sketchmind-canvas-wrapper .App-menu_top .picker-type-button:active svg,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .ToolIcon__icon:active svg,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .dropdown-menu-button:active svg,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .excalidraw-button:active svg,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .icon-button:active svg,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .picker-type-button:active svg {
+    transform: scale(0.85) rotate(8deg) !important;
+  }
+
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon:hover svg,
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button:hover svg,
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .excalidraw-button:hover svg,
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .icon-button:hover svg,
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .picker-type-button:hover svg {
+    transform: scale(1.18) rotate(-12deg) !important;
+  }
+
+  #sketchmind-canvas-wrapper .App-bottom-bar {
+    position: fixed !important;
+    left: 12px !important;
+    right: 12px !important;
+    bottom: 12px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+    min-height: 60px !important;
+    padding: 8px 10px !important;
+    background: linear-gradient(180deg, hsl(212 40% 18% / 0.95), hsl(216 42% 11% / 0.98)) !important;
+    border: 1px solid hsl(204 45% 62% / 0.2) !important;
+    border-radius: 1.35rem !important;
+    box-shadow:
+      0 20px 48px -24px hsl(220 60% 3% / 0.78),
+      inset 0 1px 0 hsl(0 0% 100% / 0.06) !important;
+    backdrop-filter: blur(18px);
+    animation: sketchmind-bar-enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
+    z-index: calc(var(--zIndex-popup) + 1) !important;
+  }
+
+  #sketchmind-canvas-wrapper .App-toolbar-content {
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+  }
+
+  #sketchmind-canvas-wrapper .App-toolbar-content button.dropdown-menu-button.main-menu-trigger.zen-mode-transition.dropdown-menu-button--mobile {
+    display: none !important;
+  }
+
+  #sketchmind-canvas-wrapper .App-toolbar-content .dropdown-menu-button,
+  #sketchmind-canvas-wrapper .App-toolbar-content .ToolIcon__icon,
+  #sketchmind-canvas-wrapper .App-toolbar-content .excalidraw-button,
+  #sketchmind-canvas-wrapper .App-toolbar-content .icon-button,
+  #sketchmind-canvas-wrapper .App-toolbar-content .picker-type-button,
+  #sketchmind-canvas-wrapper .App-toolbar-content .sketchmind-mobile-grid-toggle {
+    min-width: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+    padding: 0 !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 999px !important;
+    background: hsl(212 30% 22% / 0.94) !important;
+    border: 1px solid hsl(205 40% 70% / 0.14) !important;
+    color: rgba(255, 255, 255, 0.92) !important;
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.04) !important;
+  }
+
+  #sketchmind-canvas-wrapper .App-toolbar-content .dropdown-menu-button:hover,
+  #sketchmind-canvas-wrapper .App-toolbar-content .ToolIcon__icon:hover,
+  #sketchmind-canvas-wrapper .App-toolbar-content .excalidraw-button:hover,
+  #sketchmind-canvas-wrapper .App-toolbar-content .icon-button:hover,
+  #sketchmind-canvas-wrapper .App-toolbar-content .picker-type-button:hover,
+  #sketchmind-canvas-wrapper .App-toolbar-content .sketchmind-mobile-grid-toggle:hover {
+    background: hsl(212 32% 26% / 0.98) !important;
+    border-color: hsl(196 80% 68% / 0.28) !important;
+    box-shadow:
+      0 0 0 1px hsl(196 80% 68% / 0.16) inset,
+      0 12px 24px -18px hsl(196 80% 48% / 0.46) !important;
+  }
+
+  #sketchmind-canvas-wrapper .App-toolbar-content .dropdown-menu-button.active,
+  #sketchmind-canvas-wrapper .App-toolbar-content .ToolIcon__icon[aria-pressed="true"],
+  #sketchmind-canvas-wrapper .App-toolbar-content .sketchmind-mobile-grid-toggle.active {
+    background: hsl(196 78% 46% / 0.2) !important;
+    border-color: hsl(196 86% 60% / 0.42) !important;
+    box-shadow:
+      0 0 0 1px hsl(196 86% 60% / 0.26) inset,
+      0 14px 28px -18px hsl(196 86% 60% / 0.62) !important;
+    color: hsl(0 0% 100%) !important;
+  }
+
+  #sketchmind-canvas-wrapper .App-toolbar-content .dropdown-menu-button svg,
+  #sketchmind-canvas-wrapper .App-toolbar-content .ToolIcon__icon svg,
+  #sketchmind-canvas-wrapper .App-toolbar-content .excalidraw-button svg,
+  #sketchmind-canvas-wrapper .App-toolbar-content .icon-button svg,
+  #sketchmind-canvas-wrapper .App-toolbar-content .picker-type-button svg,
+  #sketchmind-canvas-wrapper .App-toolbar-content .sketchmind-mobile-grid-toggle svg {
+    width: 18px !important;
+    height: 18px !important;
+    transform: none !important;
   }
 
   /* Required because Excalidraw positions these popovers inline with JS. */
@@ -1721,7 +2103,271 @@
       0 20px 56px rgba(0, 0, 0, 0.72) !important;
   }
 
+  #sketchmind-canvas-wrapper .panelColumn .FontPicker__container .buttonList button,
+  #sketchmind-canvas-wrapper .panelColumn .FontPicker__container .properties-trigger.standalone,
+  #sketchmind-canvas-wrapper .panelColumn .iconSelectList.buttonList button,
+  #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_start"] .picker-option,
+  #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_end"] .picker-option {
+    min-width: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  #sketchmind-canvas-wrapper .panelColumn .FontPicker__container .buttonList button svg,
+  #sketchmind-canvas-wrapper .panelColumn .FontPicker__container .properties-trigger.standalone svg,
+  #sketchmind-canvas-wrapper .panelColumn .iconSelectList.buttonList button svg,
+  #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_start"] .picker-option svg,
+  #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_end"] .picker-option svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_start"] .picker-content,
+  #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_end"] .picker-content {
+    grid-template-columns: repeat(4, minmax(0, 44px));
+  }
+
+  .sketchmind-canvas .panelColumn .FontPicker__container .buttonList button,
+  .sketchmind-canvas .panelColumn .FontPicker__container .properties-trigger.standalone,
+  .sketchmind-canvas .panelColumn .iconSelectList.buttonList button,
+  .sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-option,
+  .sketchmind-canvas .picker[aria-label="arrowhead_end"] .picker-option {
+    min-width: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+    min-height: 44px !important;
+  }
+
+  .sketchmind-canvas .panelColumn .FontPicker__container .buttonList button svg,
+  .sketchmind-canvas .panelColumn .FontPicker__container .properties-trigger.standalone svg,
+  .sketchmind-canvas .panelColumn .iconSelectList.buttonList button svg,
+  .sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-option svg,
+  .sketchmind-canvas .picker[aria-label="arrowhead_end"] .picker-option svg {
+    width: 18px !important;
+    height: 18px !important;
+  }
+
+  .sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-content,
+  .sketchmind-canvas .picker[aria-label="arrowhead_end"] .picker-content {
+    grid-template-columns: repeat(4, minmax(0, 44px));
+  }
+
   #sketchmind-canvas-wrapper .context-menu {
     min-width: min(260px, calc(100vw - 24px));
   }
 }
+
+/* Keep font family controls on a single row and give line-properties popovers room to breathe. */
+#sketchmind-canvas-wrapper .panelColumn .FontPicker__container,
+.sketchmind-canvas .panelColumn .FontPicker__container {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  flex-wrap: nowrap !important;
+}
+
+#sketchmind-canvas-wrapper .panelColumn .FontPicker__container .buttonList,
+.sketchmind-canvas .panelColumn .FontPicker__container .buttonList {
+  display: flex !important;
+  align-items: center !important;
+  flex-wrap: nowrap !important;
+  gap: 8px !important;
+  min-width: 0;
+}
+
+#sketchmind-canvas-wrapper .panelColumn .FontPicker__container .buttonList button,
+#sketchmind-canvas-wrapper .panelColumn .FontPicker__container .properties-trigger.standalone,
+.sketchmind-canvas .panelColumn .FontPicker__container .buttonList button,
+.sketchmind-canvas .panelColumn .FontPicker__container .properties-trigger.standalone {
+  flex: 0 0 auto !important;
+  align-self: center !important;
+}
+
+#sketchmind-canvas-wrapper .popover:has(.properties-content),
+.sketchmind-canvas .popover:has(.properties-content) {
+  min-width: min(384px, calc(100vw - 2rem)) !important;
+}
+
+#sketchmind-canvas-wrapper .popover:has(.properties-content) .properties-content,
+.sketchmind-canvas .popover:has(.properties-content) .properties-content {
+  min-width: min(384px, calc(100vw - 2rem)) !important;
+  padding: 16px !important;
+}
+
+#sketchmind-canvas-wrapper .popover:has(.properties-content) .panelColumn,
+.sketchmind-canvas .popover:has(.properties-content) .panelColumn {
+  gap: 18px !important;
+}
+
+#sketchmind-canvas-wrapper .popover:has(.properties-content) .panelColumn>fieldset,
+.sketchmind-canvas .popover:has(.properties-content) .panelColumn>fieldset {
+  padding: 12px 14px !important;
+}
+
+#sketchmind-canvas-wrapper .popover:has(.properties-content) .buttonList,
+.sketchmind-canvas .popover:has(.properties-content) .buttonList {
+  gap: 10px !important;
+}
+
+#sketchmind-canvas-wrapper .popover:has(.properties-content) .range-wrapper,
+.sketchmind-canvas .popover:has(.properties-content) .range-wrapper {
+  margin-block: 6px 2px !important;
+}
+
+/* Arrowhead pickers need larger touch targets and visible separation between options. */
+#sketchmind-canvas-wrapper .picker[aria-label="arrowhead_start"],
+#sketchmind-canvas-wrapper .picker[aria-label="arrowhead_end"],
+.sketchmind-canvas .picker[aria-label="arrowhead_start"],
+.sketchmind-canvas .picker[aria-label="arrowhead_end"] {
+  width: clamp(11rem, 12vw, 16rem) !important;
+  min-width: clamp(11rem, 12vw, 16rem) !important;
+  max-width: min(18rem, calc(100vw - 2rem)) !important;
+  padding: 10px !important;
+}
+
+#sketchmind-canvas-wrapper .picker[aria-label="arrowhead_start"] .picker-content,
+#sketchmind-canvas-wrapper .picker[aria-label="arrowhead_end"] .picker-content,
+.sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-content,
+.sketchmind-canvas .picker[aria-label="arrowhead_end"] .picker-content {
+  gap: 10px !important;
+  align-items: stretch !important;
+}
+
+#sketchmind-canvas-wrapper .picker[aria-label="arrowhead_start"] .picker-option,
+#sketchmind-canvas-wrapper .picker[aria-label="arrowhead_end"] .picker-option,
+.sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-option,
+.sketchmind-canvas .picker[aria-label="arrowhead_end"] .picker-option {
+  min-height: 48px !important;
+  padding: 0 8px !important;
+}
+
+#sketchmind-canvas-wrapper .picker[aria-label="arrowhead_start"] .picker-collapsible,
+#sketchmind-canvas-wrapper .picker[aria-label="arrowhead_end"] .picker-collapsible,
+.sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-collapsible,
+.sketchmind-canvas .picker[aria-label="arrowhead_end"] .picker-collapsible {
+  margin-block: 10px 8px !important;
+  padding-inline: 4px !important;
+}
+
+#sketchmind-canvas-wrapper .picker[aria-label="arrowhead_start"] .picker-keybinding,
+#sketchmind-canvas-wrapper .picker[aria-label="arrowhead_end"] .picker-keybinding,
+.sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-keybinding,
+.sketchmind-canvas .picker[aria-label="arrowhead_end"] .picker-keybinding {
+  margin-left: 6px !important;
+}
+
+@media (max-width: 639px) {
+
+  #sketchmind-canvas-wrapper .popover:has(.properties-content),
+  .sketchmind-canvas .popover:has(.properties-content),
+  #sketchmind-canvas-wrapper .popover:has(.properties-content) .properties-content,
+  .sketchmind-canvas .popover:has(.properties-content) .properties-content {
+    min-width: auto !important;
+    width: 100% !important;
+  }
+
+  #sketchmind-canvas-wrapper .popover:has(.properties-content) .properties-content,
+  .sketchmind-canvas .popover:has(.properties-content) .properties-content {
+    padding: 14px !important;
+  }
+
+  #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_start"],
+  #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_end"],
+  .sketchmind-canvas .picker[aria-label="arrowhead_start"],
+  .sketchmind-canvas .picker[aria-label="arrowhead_end"] {
+    padding: 12px !important;
+  }
+
+  #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_start"] .picker-content,
+  #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_end"] .picker-content,
+  .sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-content,
+  .sketchmind-canvas .picker[aria-label="arrowhead_end"] .picker-content {
+    gap: 12px !important;
+  }
+}
+
+@media (max-width: 639px) {
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile {
+    background: var(--sketchmind-toolbar-bg) !important;
+    border: 1px solid var(--sketchmind-toolbar-border) !important;
+    border-radius: 1.15rem !important;
+    box-shadow: var(--sketchmind-toolbar-shadow) !important;
+    backdrop-filter: blur(18px);
+    padding: 8px !important;
+  }
+
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile > .Stack.Stack_horizontal {
+    gap: 0.45rem !important;
+  }
+
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .excalidraw-button,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .icon-button,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .picker-type-button,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .sidebar-trigger,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .default-sidebar-trigger,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile button.standalone {
+    background-color: var(--sketchmind-control-bg) !important;
+    border-color: var(--sketchmind-control-border) !important;
+    color: hsl(0 0% 100%) !important;
+    border-radius: 0.95rem !important;
+    box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.04) !important;
+    transition:
+      transform 220ms cubic-bezier(0.22, 1, 0.36, 1),
+      box-shadow 220ms ease,
+      background-color 220ms ease,
+      border-color 220ms ease !important;
+  }
+
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon:hover,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button:hover,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .excalidraw-button:hover,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .icon-button:hover,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .picker-type-button:hover,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .sidebar-trigger:hover,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .default-sidebar-trigger:hover,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile button.standalone:hover {
+    transform: translateY(-1px) !important;
+    background-color: var(--sketchmind-control-hover) !important;
+    box-shadow:
+      0 0 0 1px hsl(197 100% 70% / 0.24) inset,
+      var(--sketchmind-control-shadow) !important;
+  }
+
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon:hover svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button:hover svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .excalidraw-button:hover svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .icon-button:hover svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .picker-type-button:hover svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .sidebar-trigger:hover svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .default-sidebar-trigger:hover svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile button.standalone:hover svg {
+    transform: scale(1.18) rotate(-12deg) !important;
+  }
+
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon:active,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button:active,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .excalidraw-button:active,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .icon-button:active,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .picker-type-button:active,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .sidebar-trigger:active,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .default-sidebar-trigger:active,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile button.standalone:active {
+    transform: translateY(0) !important;
+    background-color: var(--sketchmind-control-active) !important;
+  }
+
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon:active svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button:active svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .excalidraw-button:active svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .icon-button:active svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .picker-type-button:active svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .sidebar-trigger:active svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .default-sidebar-trigger:active svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile button.standalone:active svg {
+    transform: scale(0.85) rotate(8deg) !important;
+  }
+}
+

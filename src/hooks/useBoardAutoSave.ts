@@ -28,7 +28,7 @@ function toSerializedScene(elements: readonly ExcalidrawElement[], appState: App
 			parsed.appState.sketchmindGridEnabled = appState.sketchmindGridEnabled;
 		}
 		return JSON.stringify(parsed);
-	} catch (e) {
+	} catch {
 		return json;
 	}
 }
@@ -70,13 +70,17 @@ export function useBoardAutoSave({
       setTransientStatus("saving");
 
       try {
-        await fetch(`/api/boards/${encodeURIComponent(boardId)}`, {
+        const response = await fetch(`/api/boards/${encodeURIComponent(boardId)}`, {
           method: "PATCH",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             canvas_state: JSON.parse(scene.serialized),
           }),
         });
+
+        if (!response.ok) {
+          throw new Error(`Board save failed with status ${response.status}`);
+        }
 
         lastSavedRef.current = scene.serialized;
         setTransientStatus("saved");
