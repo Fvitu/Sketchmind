@@ -2641,8 +2641,11 @@
   
   /* Fix 5: Properties Panel (Bottom Sheet) */
   #sketchmind-canvas-wrapper .sidebar:has(.properties-content),
+  .sketchmind-canvas .sidebar:has(.properties-content),
   #sketchmind-canvas-wrapper .App-menu__left:has(.properties-content),
-  #sketchmind-canvas-wrapper .layer-ui__wrapper:has(.properties-content) .App-menu__left {
+  .sketchmind-canvas .App-menu__left:has(.properties-content),
+  #sketchmind-canvas-wrapper .layer-ui__wrapper:has(.properties-content) .App-menu__left,
+  .sketchmind-canvas .layer-ui__wrapper:has(.properties-content) .App-menu__left {
     position: fixed !important;
     bottom: 0 !important;
     left: 0 !important;
@@ -2664,7 +2667,9 @@
   
   /* Drag handle for bottom sheet */
   #sketchmind-canvas-wrapper .sidebar:has(.properties-content)::before,
-  #sketchmind-canvas-wrapper .App-menu__left:has(.properties-content)::before {
+  .sketchmind-canvas .sidebar:has(.properties-content)::before,
+  #sketchmind-canvas-wrapper .App-menu__left:has(.properties-content)::before,
+  .sketchmind-canvas .App-menu__left:has(.properties-content)::before {
     content: "";
     position: absolute;
     top: 8px;

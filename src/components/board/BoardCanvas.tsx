@@ -16,6 +16,7 @@ interface BoardCanvasProps {
   initialCanvasData: CanvasData | null;
   role: BoardRole;
   onShared?: () => void;
+  onUnshared?: () => void;
 }
 
 export function BoardCanvas({
@@ -24,6 +25,7 @@ export function BoardCanvas({
   initialCanvasData,
   role,
   onShared,
+  onUnshared,
 }: BoardCanvasProps) {
   useEffect(() => {
     // Prevent scrolling on the body while the board is active
@@ -39,6 +41,7 @@ export function BoardCanvas({
   const excalidrawAPIRef = useRef<ExcalidrawImperativeAPI | null>(null);
   const canEdit = role === "owner" || role === "editor";
   const theme = useDocumentTheme();
+  const isOwner = role === "owner";
   const { saveStatus, scheduleSave } = useBoardAutoSave({
     boardId,
     debounceMs: 2000,
@@ -101,18 +104,25 @@ export function BoardCanvas({
   }, [currentBoardName, isExporting, theme]);
 
   return (
-    <div id="sketchmind-canvas-wrapper" className="fixed inset-0 flex flex-col bg-background">
+    <div 
+      className="fixed inset-0 flex flex-col bg-background touch- xjy jvtdozsc unone"
+      onPointerMove={() => {}}
+      onPointerLeave={() => {}}
+    >
       <BoardHeader
         boardId={boardId}
         boardName={currentBoardName}
         canEdit={canEdit}
         isExporting={isExporting}
         saveStatus={saveStatus}
+        isOwner={isOwner}
+        isShared={false}
         onBoardNameChange={setCurrentBoardName}
         onExportPNG={() => {
           void handleExportPng();
         }}
         onShared={onShared}
+        onUnshared={onUnshared}
       />
 
       <div className="flex-1">

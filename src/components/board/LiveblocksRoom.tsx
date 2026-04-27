@@ -14,6 +14,7 @@ interface LiveblocksRoomProps {
 	boardName: string;
 	initialCanvasData: CanvasData | null;
 	role: BoardRole;
+	onUnshared?: () => void;
 }
 
 export function LiveblocksRoom({
@@ -21,6 +22,7 @@ export function LiveblocksRoom({
 	boardName,
 	initialCanvasData,
 	role,
+	onUnshared,
 }: LiveblocksRoomProps) {
 	const roomId = `board-${boardId}`;
 
@@ -51,6 +53,7 @@ export function LiveblocksRoom({
 						boardName={boardName}
 						initialCanvasData={initialCanvasData}
 						role={role}
+						onUnshared={onUnshared}
 					/>
 				</Suspense>
 			</RoomProvider>

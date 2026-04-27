@@ -32,6 +32,7 @@ interface CollaborativeCanvasProps {
 	boardName: string;
 	initialCanvasData: CanvasData | null;
 	role: BoardRole;
+	onUnshared?: () => void;
 }
 
 export function CollaborativeCanvas({
@@ -39,6 +40,7 @@ export function CollaborativeCanvas({
 	boardName,
 	initialCanvasData,
 	role,
+	onUnshared,
 }: CollaborativeCanvasProps) {
 	const theme = useDocumentTheme();
 	const excalidrawAPI = useRef<ExcalidrawImperativeAPI | null>(null);
@@ -272,10 +274,12 @@ export function CollaborativeCanvas({
 				saveStatus={saveStatus}
 				connectionStatus={connectionStatus}
 				isOwner={isOwner}
+				isShared={true}
 				self={self}
 				others={others}
 				onBoardNameChange={setCurrentBoardName}
 				onExportPNG={() => void handleExportPNG()}
+				onUnshared={onUnshared}
 			/>
 
 			<div className="flex-1">

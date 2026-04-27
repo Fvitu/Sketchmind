@@ -1,23 +1,51 @@
-// ShareDialog — modal for generating and copying a shareable board link.
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createPortal } from "react-dom";
 
 interface ShareDialogProps {
 	boardId: string;
 	boardName: string;
 	isOpen: boolean;
+	isShared: boolean;
 	onClose: () => void;
 	onShared?: () => void;
+	onUnshared?: () => void;
 }
 
-export function ShareDialog({ boardId, boardName, isOpen, onClose, onShared }: ShareDialogProps) {
+export function ShareDialog({
+	boardId,
+	boardName,
+	isOpen,
+	isShared,
+	onClose,
+	onShared,
+	onUnshared,
+}: ShareDialogProps) {
 	const [shareUrl, setShareUrl] = useState<string | null>(null);
 	const [isCopied, setIsCopied] = useState(false);
 	const [isGeneratingLink, setIsGeneratingLink] = useState(false);
+	const [isRevoking, setIsRevoking] = useState(false);
 	const [error, setError] = useState<string | null>(null);
 
+	const fetchLink = async () => {
+		setIsGeneratingLink(true);
+		setError(null);
+		try {
+			const res = await fetch(`/api/boards/${encodeURIComponent(boardId)}/share`, {
+				method: "GET",
+			});
+			if (!res.ok) throw new Error("Failed");
+			const data = (await res.json()) as { shareUrl: string | null };
+			if (data.shareUrl) {
+				setShareUrl(`${window.location.origin}${data.shareUrl}`);
+			}
+		} catch {
+			setError("Failed to load share link");
+		} finally {
+			setIsGeneratingLink(false);
+		}
+	};
+
 	const generateLink = async () => {
-		if (shareUrl) return;
 		setIsGeneratingLink(true);
 		setError(null);
 		try {
@@ -35,17 +63,48 @@ export function ShareDialog({ boardId, boardName, isOpen, onClose, onShared }: S
 		}
 	};
 
+	// Fetch link if already shared when dialog opens
+	useEffect(() => {
+		if (isOpen && isShared && !shareUrl && !isGeneratingLink) {
+			void fetchLink();
+		}
+	}, [isOpen, isShared]);
+
+	const revokeLink = async () => {
+		if (!window.confirm("Are you sure you want to stop sharing? This will delete the LiveBlocks room and invalidate the link.")) {
+			return;
+		}
+
+		setIsRevoking(true);
+		setError(null);
+		try {
+			const res = await fetch(`/api/boards/${encodeURIComponent(boardId)}/share`, {
+				method: "DELETE",
+			});
+			if (!res.ok) throw new Error("Failed");
+			setShareUrl(null);
+			if (onUnshared) onUnshared();
+			onClose();
+		} catch {
+			setError("Failed to stop sharing");
+		} finally {
+			setIsRevoking(false);
+		}
+	};
+
 	const handleCopyLink = async () => {
 		if (!shareUrl) return;
 		await navigator.clipboard.writeText(shareUrl);
 		setIsCopied(true);
 		setTimeout(() => setIsCopied(false), 2000);
 	};
-
-	// Generate link when dialog opens
-	if (isOpen && !shareUrl && !isGeneratingLink && !error) {
-		void generateLink();
-	}
+	// Reset state when opening/closing
+	useEffect(() => {
+		if (!isOpen) {
+			setShareUrl(null);
+			setError(null);
+		}
+	}, [isOpen]);
 
 	if (!isOpen) return null;
 
@@ -71,30 +130,57 @@ export function ShareDialog({ boardId, boardName, isOpen, onClose, onShared }: S
 					Share "{boardName}"
 				</h2>
 				<p className="mb-5 text-sm text-muted-foreground">
-					Anyone with this link can join and edit this board.
+					{isShared 
+						? "Anyone with this link can join and edit this board."
+						: "Create a shareable link to collaborate with others in real-time."}
 				</p>
 
 				{error && (
 					<p className="mb-3 text-sm text-destructive">{error}</p>
 				)}
 
-				<div className="flex gap-2">
-					<input
-						readOnly
-						value={isGeneratingLink ? "Generating link..." : (shareUrl ?? "")}
-						placeholder="Generating link..."
-						className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
-					/>
+				{!isShared && !shareUrl ? (
 					<button
-						onClick={() => void handleCopyLink()}
-						disabled={!shareUrl || isGeneratingLink}
-						className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+						onClick={() => void generateLink()}
+						disabled={isGeneratingLink}
+						className="w-full rounded-lg bg-primary py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
 					>
-						{isCopied ? "✓ Copied!" : "Copy"}
+						{isGeneratingLink ? "Creating Room..." : "Create Shareable Link"}
 					</button>
-				</div>
+				) : (
+					<div className="space-y-4">
+						<div className="flex gap-2">
+							<input
+								readOnly
+								value={isGeneratingLink ? "Generating link..." : (shareUrl ?? "")}
+								placeholder="Generating link..."
+								className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/50"
+							/>
+							<button
+								onClick={() => void handleCopyLink()}
+								disabled={!shareUrl || isGeneratingLink}
+								className="rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50 transition-colors"
+							>
+								{isCopied ? "✓ Copied!" : "Copy"}
+							</button>
+						</div>
 
-				<p className="mt-4 text-xs text-muted-foreground">
+						<div className="flex justify-between items-center pt-2">
+							<p className="text-xs text-muted-foreground">
+								Public link is active
+							</p>
+							<button
+								onClick={() => void revokeLink()}
+								disabled={isRevoking}
+								className="text-xs font-medium text-destructive hover:underline disabled:opacity-50"
+							>
+								{isRevoking ? "Stopping..." : "Stop sharing & delete room"}
+							</button>
+						</div>
+					</div>
+				)}
+
+				<p className="mt-6 text-xs text-muted-foreground">
 					The recipient must have a Sketchmind account to edit the board.
 				</p>
 			</div>

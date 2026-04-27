@@ -1183,6 +1183,21 @@ async function handleBoardShare(req, res, boardId) {
 
 	const client = getSupabaseClient();
 
+	if (req.method === "GET") {
+		// Get existing share link - owner only
+		const { data: board, error } = await client.from("boards").select("id, owner_id, share_token").eq("id", boardId).eq("owner_id", userId).maybeSingle();
+
+		if (error || !board) {
+			return json(res, 404, { error: "Board not found or not owner" });
+		}
+
+		if (!board.share_token) {
+			return json(res, 200, { token: null, shareUrl: null });
+		}
+
+		return json(res, 200, { token: board.share_token, shareUrl: `/join/${board.share_token}` });
+	}
+
 	if (req.method === "POST") {
 		// Generate share link — owner only
 		const { data: board, error } = await client.from("boards").select("id, owner_id, share_token").eq("id", boardId).eq("owner_id", userId).maybeSingle();
@@ -1210,6 +1225,16 @@ async function handleBoardShare(req, res, boardId) {
 
 		if (error) {
 			return json(res, 500, { error: "Failed to revoke share link" });
+		}
+
+		// Also delete the Liveblocks room to save bandwidth/costs
+		if (liveblocksClient) {
+			try {
+				await liveblocksClient.deleteRoom(`board-${boardId}`);
+			} catch (err) {
+				// We ignore errors here (e.g. if room didn't exist yet)
+				console.warn(`[Liveblocks] Could not delete room board-${boardId}:`, err.message);
+			}
 		}
 
 		return json(res, 200, { ok: true });

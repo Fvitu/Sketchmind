@@ -23,9 +23,11 @@ interface BoardHeaderProps {
   isOwner?: boolean;
   self?: ReturnType<typeof useSelf>;
   others?: ReturnType<typeof useOthers>;
+  isShared: boolean;
   onBoardNameChange: (nextName: string) => void;
   onExportPNG: () => void;
   onShared?: () => void;
+  onUnshared?: () => void;
 }
 
 const saveStatusLabel: Record<SaveStatus, string> = {
@@ -47,14 +49,16 @@ export function BoardHeader({
   boardName,
   canEdit,
   isExporting,
- saveStatus,
+  saveStatus,
   connectionStatus,
   isOwner = false,
   self,
   others,
+  isShared,
   onBoardNameChange,
   onExportPNG,
   onShared,
+  onUnshared,
 }: BoardHeaderProps) {
   const [draftName, setDraftName] = useState(boardName);
   const [isEditing, setIsEditing] = useState(false);
@@ -233,8 +237,10 @@ export function BoardHeader({
         boardId={boardId}
         boardName={boardName}
         isOpen={isShareModalOpen}
+        isShared={isShared}
         onClose={() => setIsShareModalOpen(false)}
         onShared={onShared}
+        onUnshared={onUnshared}
       />
     </header>
   );

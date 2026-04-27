@@ -72,6 +72,7 @@ const BoardPlaceholder = () => {
         boardName={board.title}
         initialCanvasData={board.canvas_state as CanvasData | null}
         role={board.role ?? "owner"}
+        onUnshared={() => setBoard({ ...board, visibility: "private" })}
       />
     );
   }
@@ -83,6 +84,7 @@ const BoardPlaceholder = () => {
       initialCanvasData={board.canvas_state as CanvasData | null}
       role={board.role ?? "owner"}
       onShared={() => setBoard({ ...board, visibility: "shared" })}
+      onUnshared={() => setBoard({ ...board, visibility: "private" })}
     />
   );
 };
