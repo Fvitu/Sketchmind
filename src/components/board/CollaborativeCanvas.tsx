@@ -16,6 +16,7 @@ import {
 import { ExcalidrawCanvas } from "./ExcalidrawCanvas";
 import { BoardHeader } from "./BoardHeader";
 import { CollaboratorSelections } from "./CollaboratorSelections";
+import { CollaboratorCursors } from "./CollaboratorCursors";
 import { useBoardAutoSave } from "@/hooks/useBoardAutoSave";
 import { useDocumentTheme } from "@/hooks/useDocumentTheme";
 import { getUserColor } from "@/lib/colors";
@@ -76,7 +77,7 @@ export function CollaborativeCanvas({
 		if (self?.info && self.connectionId !== undefined) {
 			updateMyPresence({
 				name: self.info.name,
-				color: getUserColor(self.connectionId),
+				color: self.info?.color || getUserColor(self.connectionId),
 				avatar: self.info.avatar,
 			});
 		}
@@ -112,6 +113,13 @@ export function CollaborativeCanvas({
 			// Do not re-broadcast changes that came from a remote update
 			if (isApplyingRemoteUpdate.current) return;
 
+			// Broadcast selected element IDs so others can see what you've selected in real time.
+			// This needs to happen even if elements haven't changed (e.g. just clicking/hovering).
+			const selectedIds = Object.keys(appState.selectedElementIds ?? {}).filter(
+				(id) => (appState.selectedElementIds as Record<string, boolean>)[id],
+			);
+			updateMyPresence({ selectedElementIds: selectedIds });
+
 			const elementsJson = JSON.stringify(elements);
 
 			// Skip if elements did not change (Excalidraw fires onChange on viewport pan/zoom)
@@ -128,13 +136,6 @@ export function CollaborativeCanvas({
 
 			// Persist to Supabase (debounced 2s — durable storage)
 			scheduleSave(elements, appState, files);
-
-			// Broadcast selected element IDs so others can see what you've selected
-			const selectedIds = Object.keys(appState.selectedElementIds ?? {}).filter(
-				(id) => (appState.selectedElementIds as Record<string, boolean>)[id],
-			);
-
-			updateMyPresence({ selectedElementIds: selectedIds });
 		},
 		[canEdit, updateSharedElements, scheduleSave, updateMyPresence],
 	);
@@ -147,24 +148,14 @@ export function CollaborativeCanvas({
 		const collaborators = new Map<string, any>();
 
 		others.forEach((other) => {
-			const cursor = other.presence.cursor;
-			const selection = other.presence.selectedElementIds ?? [];
-			const selectedElementIds = selection.reduce((acc, id) => {
-				acc[id] = true;
-				return acc;
-			}, {} as Record<string, boolean>);
-
-			const color = getUserColor(other.connectionId);
+			const color = other.presence?.color || getUserColor(other.connectionId);
 
 			collaborators.set(String(other.connectionId), {
-				pointer: cursor ? { x: cursor.x, y: cursor.y } : undefined,
-				selectedElementIds,
+				// We hide native pointers and selection boxes to use our zero-lag custom overlays.
+				pointer: undefined, 
+				selectedElementIds: {}, 
 				username: other.info?.name || "Anonymous",
-				color: {
-					background: color,
-					stroke: color,
-				},
-				// Intentionally omitting avatarUrl to avoid some native UI, though we also hide it via CSS
+				color: color,
 			});
 		});
 
@@ -238,12 +229,38 @@ export function CollaborativeCanvas({
 		}
 	}, [currentBoardName, isExporting, theme]);
 
+	// Prevent browser zoom (Ctrl+Wheel, Pinch-to-zoom)
+	useEffect(() => {
+		const handleWheel = (e: WheelEvent) => {
+			if (e.ctrlKey || e.metaKey) {
+				e.preventDefault();
+			}
+		};
+
+		const handleGesture = (e: Event) => {
+			e.preventDefault();
+		};
+
+		// Passive: false is required to call preventDefault()
+		window.addEventListener("wheel", handleWheel, { passive: false });
+		window.addEventListener("gesturestart", handleGesture);
+		window.addEventListener("gesturechange", handleGesture);
+		window.addEventListener("gestureend", handleGesture);
+
+		return () => {
+			window.removeEventListener("wheel", handleWheel);
+			window.removeEventListener("gesturestart", handleGesture);
+			window.removeEventListener("gesturechange", handleGesture);
+			window.removeEventListener("gestureend", handleGesture);
+		};
+	}, []);
+
 	// Capacity check: others.length is count of OTHER users; total = others.length + 1 (self)
 	const isAtCapacity = others.length >= 4;
 
 	return (
 		<div
-			className="fixed inset-0 flex flex-col bg-background"
+			className="fixed inset-0 flex flex-col bg-background touch- xjy jvtdozsc unone"
 			onPointerMove={handlePointerMove}
 			onPointerLeave={handlePointerLeave}
 		>
@@ -271,7 +288,8 @@ export function CollaborativeCanvas({
 				/>
 			</div>
 
-			{/* Custom overlays for real-time visual indicators (Tooltips only, invisible AABB) */}
+			{/* Custom overlays for real-time visual indicators (Cursors, Selections, Tooltips) */}
+			<CollaboratorCursors others={others} excalidrawAPI={excalidrawAPI} />
 			<CollaboratorSelections others={others} excalidrawAPI={excalidrawAPI} />
 
 			{/* At-capacity warning banner */}

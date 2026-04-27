@@ -1,3 +1,4 @@
+import { useEffect } from "react";
 import { motion } from "framer-motion";
 import { Logo } from "@/components/brand/Logo";
 
@@ -6,8 +7,17 @@ interface LoadingScreenProps {
 }
 
 export function LoadingScreen({ message = "Connecting to room..." }: LoadingScreenProps) {
+	useEffect(() => {
+		// Prevent scrolling on the body while the loading screen is active
+		const originalOverflow = document.body.style.overflow;
+		document.body.style.overflow = "hidden";
+		return () => {
+			document.body.style.overflow = originalOverflow;
+		};
+	}, []);
+
 	return (
-		<div className="flex h-screen w-screen flex-col items-center justify-center bg-background text-foreground overflow-hidden">
+		<div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-background text-foreground overflow-hidden">
 			{/* Background Glow */}
 			<div className="absolute inset-0 overflow-hidden pointer-events-none">
 				<div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/10 rounded-full blur-[120px] animate-pulse" />

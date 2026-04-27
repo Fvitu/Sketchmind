@@ -71,6 +71,18 @@
     --tl-font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
     --tl-font-serif: "Georgia", "Times New Roman", serif;
     --tl-font-mono: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+    /* Sketchmind Toolbar & Control Variables */
+    --sketchmind-toolbar-bg: linear-gradient(160deg, hsl(213 28% 10% / 0.98), hsl(213 30% 7% / 0.99));
+    --sketchmind-toolbar-border: hsl(213 12% 22% / 0.7);
+    --sketchmind-toolbar-shadow:
+      0 24px 60px -34px hsl(0 0% 0% / 0.42),
+      0 10px 28px -20px hsl(0 0% 0% / 0.9),
+      inset 0 1px 0 hsl(0 0% 100% / 0.05);
+    --sketchmind-control-bg: hsl(213 24% 13% / 0.92);
+    --sketchmind-control-hover: hsl(213 28% 18% / 0.98);
+    --sketchmind-control-active: hsl(213 30% 21% / 0.98);
+    --sketchmind-control-border: hsl(213 12% 24% / 0.9);
+    --sketchmind-control-shadow: 0 14px 28px -22px hsl(0 0% 0% / 0.62);
   }
 }
 
@@ -373,6 +385,10 @@
 .sketchmind-canvas .dropdown-menu-item svg {
   color: currentColor !important;
   transition: transform 220ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.sketchmind-canvas .ToolIcon_type_button.ToolIcon_size_medium.ToolIcon_type_button--show.ToolIcon {
+  background-color: transparent;
 }
 
 .sketchmind-canvas .buttonList input:checked+label,
@@ -805,8 +821,8 @@
   --button-selected-bg: rgba(34, 211, 238, 0.15);
   --button-selected-border: rgba(34, 211, 238, 0.4);
   --button-selected-hover-bg: rgba(34, 211, 238, 0.2);
-  --island-bg-color: rgba(12, 12, 12, 0.95);
-  --popup-bg-color: rgba(12, 12, 12, 0.98);
+  --island-bg-color: hsl(213 28% 10% / 0.95);
+  --popup-bg-color: hsl(213 30% 8% / 0.98);
   --sidebar-bg-color: rgba(10, 10, 10, 0.98);
   --sidebar-border-color: rgba(255, 255, 255, 0.08);
   --input-bg-color: rgba(255, 255, 255, 0.04);
@@ -982,12 +998,19 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.03) !important;
   color: rgba(255, 255, 255, 0.86) !important;
   transform: translateZ(0);
-  transition:
-    transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1),
+  transition: transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1),
     background-color 150ms ease,
     border-color 150ms ease,
     box-shadow 150ms ease !important;
 }
+
+/* Specific override for font-family buttons to match properties panel size */
+#sketchmind-canvas-wrapper button[data-testid^="font-family-"] {
+  min-width: 34px !important;
+  width: 34px !important;
+  height: 34px !important;
+}
+
 
 #sketchmind-canvas-wrapper .default-sidebar-trigger {
   gap: 0 !important;
@@ -1022,10 +1045,16 @@
   stroke-width: 2 !important;
   vector-effect: non-scaling-stroke;
   transform-origin: center;
-  transition:
-    transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1),
+  transition: transform 150ms cubic-bezier(0.34, 1.56, 0.64, 1),
     opacity 150ms ease !important;
 }
+
+/* Specific override for font-family SVGs */
+#sketchmind-canvas-wrapper button[data-testid^="font-family-"] svg {
+  width: 15px !important;
+  height: 15px !important;
+}
+
 
 #sketchmind-canvas-wrapper .ToolIcon__icon:hover,
 #sketchmind-canvas-wrapper .dropdown-menu-button:hover,
@@ -1762,10 +1791,10 @@
   .sketchmind-canvas .panelColumn .iconSelectList.buttonList button,
   .sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-option,
   .sketchmind-canvas .picker[aria-label="arrowhead_end"] .picker-option {
-    min-width: 36px !important;
-    width: 36px !important;
-    height: 36px !important;
-    min-height: 36px !important;
+    min-width: 40px !important;
+    width: 40px !important;
+    height: 40px !important;
+    min-height: 40px !important;
   }
 
   .sketchmind-canvas .panelColumn .FontPicker__container .buttonList button svg,
@@ -1779,7 +1808,7 @@
 
   .sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-content,
   .sketchmind-canvas .picker[aria-label="arrowhead_end"] .picker-content {
-    grid-template-columns: repeat(4, minmax(0, 36px));
+    grid-template-columns: repeat(4, minmax(0, 44px));
   }
 }
 
@@ -1793,11 +1822,13 @@
     padding: 8px !important;
   }
 
-  #sketchmind-canvas-wrapper .App-menu_top .Island {
-    width: calc(100vw - 16px) !important;
+  #sketchmind-canvas-wrapper .App-menu_top .Island,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile,
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container {
+    width: fit-content !important;
     max-width: calc(100vw - 16px) !important;
-    min-width: calc(100vw - 16px) !important;
-    padding: 6px !important;
+    min-width: auto !important;
+    padding: 8px !important;
     border-radius: 1.15rem !important;
   }
 
@@ -1808,40 +1839,34 @@
     scroll-snap-type: x proximity;
   }
 
-  #sketchmind-canvas-wrapper .ToolIcon__icon,
-  #sketchmind-canvas-wrapper .dropdown-menu-button,
-  #sketchmind-canvas-wrapper .excalidraw-button,
-  #sketchmind-canvas-wrapper .buttonList label,
-  #sketchmind-canvas-wrapper .buttonList button,
-  #sketchmind-canvas-wrapper .buttonList .zIndexButton,
-  #sketchmind-canvas-wrapper .icon-button,
-  #sketchmind-canvas-wrapper .picker-type-button,
-  #sketchmind-canvas-wrapper .sidebar-trigger,
-  #sketchmind-canvas-wrapper .default-sidebar-trigger,
-  #sketchmind-canvas-wrapper button.standalone {
-    min-width: 44px !important;
-    width: 44px !important;
-    height: 44px !important;
+
+  /* Only the misc-tools panel (lock/hand) should be 52px; everything else keeps its own size */
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container .ToolIcon__icon,
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container .sidebar-trigger,
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container .default-sidebar-trigger,
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container button.standalone {
+    min-width: 52px !important;
+    width: 52px !important;
+    height: 52px !important;
   }
 
-  #sketchmind-canvas-wrapper .ToolIcon__icon svg,
-  #sketchmind-canvas-wrapper .dropdown-menu-button svg,
-  #sketchmind-canvas-wrapper .excalidraw-button svg,
-  #sketchmind-canvas-wrapper .buttonList label svg,
-  #sketchmind-canvas-wrapper .buttonList button svg,
-  #sketchmind-canvas-wrapper .buttonList .zIndexButton svg,
-  #sketchmind-canvas-wrapper .icon-button svg,
-  #sketchmind-canvas-wrapper .picker-type-button svg,
-  #sketchmind-canvas-wrapper .sidebar-trigger svg,
-  #sketchmind-canvas-wrapper .default-sidebar-trigger svg,
-  #sketchmind-canvas-wrapper button.standalone svg {
-    width: 18px !important;
-    height: 18px !important;
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .ToolIcon__icon svg,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .dropdown-menu-button svg,
+  #sketchmind-canvas-wrapper .App-toolbar--mobile .excalidraw-button svg,
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container .ToolIcon__icon svg,
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container .sidebar-trigger svg,
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container .default-sidebar-trigger svg,
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container button.standalone svg {
+    width: 22px !important;
+    height: 22px !important;
   }
 
   #sketchmind-canvas-wrapper .mobile-misc-tools-container,
   #sketchmind-canvas-wrapper .App-toolbar--mobile {
     display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    gap: 12px !important;
   }
 
   #sketchmind-canvas-wrapper .footer-center {
@@ -1852,16 +1877,17 @@
     animation: sketchmind-bar-enter 320ms cubic-bezier(0.22, 1, 0.36, 1) both;
   }
 
+  /* NUCLEAR: Apply premium styles to ALL toolbars and islands in the app */
+  .excalidraw .Island,
+  .excalidraw .App-toolbar,
+  .App-toolbar--mobile,
+  .mobile-misc-tools-container,
   #sketchmind-canvas-wrapper .App-menu_top .Island,
-  #sketchmind-canvas-wrapper .App-menu_top .App-toolbar,
   #sketchmind-canvas-wrapper .App-toolbar--mobile {
-    background: linear-gradient(160deg, hsl(213 28% 9% / 0.98), hsl(213 30% 6% / 0.99)) !important;
-    border: 1px solid hsl(213 12% 20% / 0.82) !important;
-    box-shadow:
-      0 24px 60px -34px hsl(0 0% 0% / 0.42),
-      0 10px 28px -20px hsl(0 0% 0% / 0.9),
-      inset 0 1px 0 hsl(0 0% 100% / 0.05) !important;
-    backdrop-filter: blur(18px);
+    background: var(--sketchmind-toolbar-bg) !important;
+    border: 1px solid var(--sketchmind-toolbar-border) !important;
+    box-shadow: var(--sketchmind-toolbar-shadow) !important;
+    backdrop-filter: blur(18px) !important;
     border-radius: 1.15rem !important;
   }
 
@@ -1869,25 +1895,34 @@
     padding: 6px !important;
   }
 
-  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .Stack.Stack_horizontal {
-    gap: 0.45rem !important;
+  #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .Stack.Stack_horizontal,
+  #sketchmind-canvas-wrapper .App-toolbar-container .Stack.Stack_horizontal {
+    gap: 8px !important;
   }
 
+  .excalidraw .ToolIcon__icon,
+  .excalidraw .dropdown-menu-button,
+  .excalidraw .excalidraw-button,
+  .excalidraw .icon-button,
+  .excalidraw .picker-type-button,
+  .excalidraw .sidebar-trigger,
+  .excalidraw .default-sidebar-trigger,
+  .excalidraw .App-toolbar__divider,
   #sketchmind-canvas-wrapper .App-menu_top .ToolIcon__icon,
-  #sketchmind-canvas-wrapper .App-menu_top .dropdown-menu-button,
-  #sketchmind-canvas-wrapper .App-menu_top .excalidraw-button,
-  #sketchmind-canvas-wrapper .App-menu_top .icon-button,
-  #sketchmind-canvas-wrapper .App-menu_top .picker-type-button,
   #sketchmind-canvas-wrapper .App-toolbar--mobile .ToolIcon__icon,
-  #sketchmind-canvas-wrapper .App-toolbar--mobile .dropdown-menu-button,
-  #sketchmind-canvas-wrapper .App-toolbar--mobile .excalidraw-button,
-  #sketchmind-canvas-wrapper .App-toolbar--mobile .icon-button,
-  #sketchmind-canvas-wrapper .App-toolbar--mobile .picker-type-button {
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container .ToolIcon__icon {
     background-color: var(--sketchmind-control-bg) !important;
     border-color: var(--sketchmind-control-border) !important;
     color: hsl(0 0% 100%) !important;
     box-shadow: inset 0 1px 0 hsl(0 0% 100% / 0.04) !important;
-    border-radius: 0.95rem !important;
+    border-radius: 999px !important;
+  }
+
+  .excalidraw .App-toolbar__divider {
+    width: 1px !important;
+    height: 24px !important;
+    background-color: var(--sketchmind-toolbar-border) !important;
+    margin: 0 4px !important;
   }
 
   #sketchmind-canvas-wrapper .Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon,
@@ -2001,6 +2036,7 @@
     align-items: center !important;
     justify-content: center !important;
     gap: 8px !important;
+    pointer-events: auto !important;
   }
 
   #sketchmind-canvas-wrapper .App-toolbar-content button.dropdown-menu-button.main-menu-trigger.zen-mode-transition.dropdown-menu-button--mobile {
@@ -2013,10 +2049,10 @@
   #sketchmind-canvas-wrapper .App-toolbar-content .icon-button,
   #sketchmind-canvas-wrapper .App-toolbar-content .picker-type-button,
   #sketchmind-canvas-wrapper .App-toolbar-content .sketchmind-mobile-grid-toggle {
-    min-width: 44px !important;
-    width: 44px !important;
-    height: 44px !important;
-    padding:nayb qqqkxpn zhy  0 !important;
+    min-width: 48px !important;
+    width: 48px !important;
+    height: 48px !important;
+    padding: 0 !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
@@ -2059,7 +2095,16 @@
   #sketchmind-canvas-wrapper .App-toolbar-content .sketchmind-mobile-grid-toggle svg {
     width: 18px !important;
     height: 18px !important;
-    transform: none !important;
+    transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  }
+
+  #sketchmind-canvas-wrapper .App-toolbar-content .ToolIcon__icon:hover svg,
+  #sketchmind-canvas-wrapper .App-toolbar-content .ToolIcon__icon:active svg,
+  #sketchmind-canvas-wrapper .App-toolbar-content .excalidraw-button:hover svg,
+  #sketchmind-canvas-wrapper .App-toolbar-content .excalidraw-button:active svg,
+  #sketchmind-canvas-wrapper .App-toolbar-content .icon-button:hover svg,
+  #sketchmind-canvas-wrapper .App-toolbar-content .icon-button:active svg {
+    transform: scale(1.15) !important;
   }
 
   /* Required because Excalidraw positions these popovers inline with JS. */
@@ -2078,7 +2123,29 @@
     box-shadow:
       0 0 0 999px rgba(0, 0, 0, 0.48),
       0 20px 56px rgba(0, 0, 0, 0.7) !important;
-    overflow: hidden;
+    overflow: visible;
+  }
+
+  /* Ensure Duplicate/Trash buttons and selection actions are fully hittable on mobile */
+  .excalidraw .layer-ui__wrapper .ToolIcon.ToolIcon_type_button,
+  .excalidraw .layer-ui__wrapper .ToolIcon.ToolIcon_type_radio {
+    overflow: visible !important;
+    pointer-events: auto !important;
+    position: relative !important;
+    z-index: 50 !important;
+    transition: transform 0.15s cubic-bezier(0.34, 1.56, 0.64, 1) !important;
+  }
+
+  .excalidraw .layer-ui__wrapper .ToolIcon.ToolIcon_type_button:hover,
+  .excalidraw .layer-ui__wrapper .ToolIcon.ToolIcon_type_button:active,
+  .excalidraw .layer-ui__wrapper .ToolIcon.ToolIcon_type_radio:hover,
+  .excalidraw .layer-ui__wrapper .ToolIcon.ToolIcon_type_radio:active {
+    transform: translateY(-1px) !important;
+  }
+
+  .excalidraw .layer-ui__wrapper .ToolIcon__icon {
+    pointer-events: auto !important;
+    z-index: 51 !important;
   }
 
   #sketchmind-canvas-wrapper .popover:has(.properties-content) .properties-content,
@@ -2108,10 +2175,10 @@
   #sketchmind-canvas-wrapper .panelColumn .iconSelectList.buttonList button,
   #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_start"] .picker-option,
   #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_end"] .picker-option {
-    min-width: 44px !important;
-    width: 44px !important;
-    height: 44px !important;
-    min-height: 44px !important;
+    min-width: 38px !important;
+    width: 38px !important;
+    height: 38px !important;
+    min-height: 38px !important;
   }
 
   #sketchmind-canvas-wrapper .panelColumn .FontPicker__container .buttonList button svg,
@@ -2119,8 +2186,8 @@
   #sketchmind-canvas-wrapper .panelColumn .iconSelectList.buttonList button svg,
   #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_start"] .picker-option svg,
   #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_end"] .picker-option svg {
-    width: 18px !important;
-    height: 18px !important;
+    width: 16px !important;
+    height: 16px !important;
   }
 
   #sketchmind-canvas-wrapper .picker[aria-label="arrowhead_start"] .picker-content,
@@ -2144,8 +2211,8 @@
   .sketchmind-canvas .panelColumn .iconSelectList.buttonList button svg,
   .sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-option svg,
   .sketchmind-canvas .picker[aria-label="arrowhead_end"] .picker-option svg {
-    width: 18px !important;
-    height: 18px !important;
+    width: 16px !important;
+    height: 16px !important;
   }
 
   .sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-content,
@@ -2163,8 +2230,10 @@
 .sketchmind-canvas .panelColumn .FontPicker__container {
   display: flex !important;
   align-items: center !important;
-  gap: 8px !important;
+  gap: 12px !important;
   flex-wrap: nowrap !important;
+  width: 100% !important;
+  justify-content: flex-start !important;
 }
 
 #sketchmind-canvas-wrapper .panelColumn .FontPicker__container .buttonList,
@@ -2172,15 +2241,18 @@
   display: flex !important;
   align-items: center !important;
   flex-wrap: nowrap !important;
-  gap: 8px !important;
-  min-width: 0;
+  gap: 10px !important;
+  flex: 0 0 auto !important;
 }
 
 #sketchmind-canvas-wrapper .panelColumn .FontPicker__container .buttonList button,
 #sketchmind-canvas-wrapper .panelColumn .FontPicker__container .properties-trigger.standalone,
 .sketchmind-canvas .panelColumn .FontPicker__container .buttonList button,
 .sketchmind-canvas .panelColumn .FontPicker__container .properties-trigger.standalone {
-  flex: 0 0 auto !important;
+  min-width: 34px !important;
+  width: 34px !important;
+  height: 34px !important;
+  flex: 0 0 34px !important;
   align-self: center !important;
 }
 
@@ -2293,12 +2365,12 @@
     border: 1px solid var(--sketchmind-toolbar-border) !important;
     border-radius: 1.15rem !important;
     box-shadow: var(--sketchmind-toolbar-shadow) !important;
-    backdrop-filter: blur(18px);
+    backdrop-filter: blur(18px) !important;
     padding: 8px !important;
   }
 
   #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile > .Stack.Stack_horizontal {
-    gap: 0.45rem !important;
+    gap: 8px !important;
   }
 
   #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon,
@@ -2374,4 +2446,239 @@
 /* Hide Liveblocks Badge */
 #liveblocks-badge {
   display: none !important;
+}
+
+/* Mobile Responsive Overrides */
+@media (max-width: 1023px) {
+  /* Fix 1: Main Toolbars - Visible on mobile */
+  #sketchmind-canvas-wrapper .excalidraw .App-toolbar--mobile {
+    display: flex !important;
+  }
+
+  /* HIGH PRIORITY OVERRIDE FOR MOBILE MISC TOOLS (SIDE PANEL) */
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 18px !important; /* Increased space */
+    padding: 10px !important;
+    background: var(--sketchmind-toolbar-bg) !important;
+    border: 1px solid var(--sketchmind-toolbar-border) !important;
+    border-radius: 1.25rem !important;
+    box-shadow: var(--sketchmind-toolbar-shadow) !important;
+    backdrop-filter: blur(16px) !important;
+    position: fixed !important;
+    right: 12px !important;
+    top: 45% !important; /* Slightly above center to avoid clash with bottom items */
+    transform: translateY(-50%) !important;
+    z-index: 1000 !important;
+    pointer-events: auto !important;
+  }
+
+  /* Standardize all button types in this container */
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container > label,
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container > button {
+    width: 52px !important; /* Much larger size */
+    height: 52px !important;
+    min-width: 52px !important;
+    min-height: 52px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    background: none !important;
+    border: none !important;
+    position: relative !important;
+  }
+
+  /* Fix inner icon containers */
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container .ToolIcon__icon,
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container .sidebar-trigger {
+    width: 48px !important;
+    height: 48px !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    border-radius: 0.95rem !important;
+    background-color: var(--sketchmind-control-bg) !important;
+    border: 1px solid var(--sketchmind-control-border) !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: var(--sketchmind-control-shadow) !important;
+  }
+
+  /* Hide the text labels in the side panel to keep it clean */
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container .sidebar-trigger__label {
+    display: none !important;
+  }
+
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container svg {
+    width: 24px !important;
+    height: 24px !important;
+  }
+
+  /* Fix 2: Hide native extra tools trigger */
+  #sketchmind-canvas-wrapper .excalidraw .App-toolbar__extra-tools-trigger {
+    display: none !important;
+  }
+}
+
+@media (max-width: 639px) {
+  /* Fix 3: Top Bar */
+  .sketchmind-topbar .btn-export-label,
+  .sketchmind-topbar .btn-share-label {
+    display: none !important;
+  }
+  .sketchmind-topbar .btn-export,
+  .sketchmind-topbar .btn-share {
+    width: 40px !important;
+    height: 40px !important;
+    padding: 0 !important;
+    min-width: 40px !important;
+  }
+  
+  /* Top bar layout mobile adaptations */
+  .sketchmind-topbar {
+    padding: 0 12px !important;
+    gap: 8px !important;
+  }
+  
+  .sketchmind-topbar input {
+    min-width: 80px !important;
+    font-size: 14px !important;
+  }
+
+  /* Fix 1: Toolbar scrolling */
+  #sketchmind-canvas-wrapper .App-menu_top .App-toolbar:not(.App-toolbar--mobile) {
+    display: flex !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+    -ms-overflow-style: none !important;
+    max-width: calc(100vw - 32px) !important;
+  }
+  #sketchmind-canvas-wrapper .App-menu_top .App-toolbar::-webkit-scrollbar {
+    display: none !important;
+  }
+  
+  #sketchmind-canvas-wrapper .App-menu_top .Stack {
+    flex-wrap: nowrap !important;
+    display: flex !important;
+    gap: 12px !important;
+  }
+  
+  /* Ensure minimum tap targets */
+  #sketchmind-canvas-wrapper .ToolIcon__icon,
+  #sketchmind-canvas-wrapper .dropdown-menu-button,
+  #sketchmind-canvas-wrapper .excalidraw-button {
+    min-width: 48px !important;
+    min-height: 48px !important;
+  }
+  
+  /* Fix 4: Bottom Bar */
+  #sketchmind-canvas-wrapper .App-menu_bottom {
+    position: fixed !important;
+    bottom: 112px !important; /* Above bottom nav pill */
+    left: 50% !important;
+    transform: translateX(-50%) !important;
+    width: max-content !important;
+    z-index: 50 !important;
+    padding: 0 !important;
+    background: transparent !important;
+    animation: none !important;
+  }
+  
+  /* Container for bottom bar tools */
+  #sketchmind-canvas-wrapper .App-menu_bottom .undo-redo-buttons {
+    display: flex !important;
+    background: rgba(12, 12, 12, 0.85) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 9999px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+    padding: 6px !important;
+    gap: 6px !important;
+  }
+  
+  #sketchmind-canvas-wrapper .App-menu_bottom .App-toolbar-content {
+    display: flex !important;
+    background: rgba(12, 12, 12, 0.85) !important;
+    backdrop-filter: blur(20px) saturate(180%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 9999px !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+    padding: 6px !important;
+    gap: 6px !important;
+  }
+
+  /* Make undo/redo buttons in bottom menu circle like toolbar */
+  #sketchmind-canvas-wrapper .App-menu_bottom button {
+    min-width: 44px !important;
+    min-height: 44px !important;
+    width: 44px !important;
+    height: 44px !important;
+    padding: 0 !important;
+    border-radius: 50% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(255, 255, 255, 0.06) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    color: rgba(255, 255, 255, 0.86) !important;
+  }
+  
+  #sketchmind-canvas-wrapper .App-menu_bottom button:hover {
+    background: rgba(255, 255, 255, 0.12) !important;
+    transform: scale(1.15) !important;
+  }
+
+  /* Disabled state for undo/redo */
+  #sketchmind-canvas-wrapper .App-menu_bottom button:disabled,
+  #sketchmind-canvas-wrapper .App-menu_bottom button[disabled],
+  #sketchmind-canvas-wrapper .App-menu_bottom button[aria-disabled="true"] {
+    opacity: 0.35 !important;
+    pointer-events: none !important;
+  }
+  
+  /* Fix 5: Properties Panel (Bottom Sheet) */
+  #sketchmind-canvas-wrapper .sidebar:has(.properties-content),
+  #sketchmind-canvas-wrapper .App-menu__left:has(.properties-content),
+  #sketchmind-canvas-wrapper .layer-ui__wrapper:has(.properties-content) .App-menu__left {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    height: auto !important;
+    max-height: 80vh !important;
+    background: rgba(12, 12, 12, 0.92) !important;
+    border: 0 !important;
+    border-top: 1px solid rgba(255, 255, 255, 0.08) !important;
+    border-radius: 16px 16px 0 0 !important;
+    backdrop-filter: blur(20px) !important;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.5) !important;
+    z-index: 100 !important;
+    padding-top: 24px !important;
+    overflow-y: auto !important;
+  }
+  
+  /* Drag handle for bottom sheet */
+  #sketchmind-canvas-wrapper .sidebar:has(.properties-content)::before,
+  #sketchmind-canvas-wrapper .App-menu__left:has(.properties-content)::before {
+    content: "";
+    position: absolute;
+    top: 8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 36px;
+    height: 4px;
+    border-radius: 2px;
+    background: rgba(255, 255, 255, 0.2);
+    z-index: 10;
+  }
+  
+  /* Prevent horizontal scroll */
+  body {
+    overflow-x: hidden;
+  }
 }

@@ -1,8 +1,7 @@
-// CollaboratorCursors — renders live cursors for other users in the room.
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
-import { sceneCoordsToViewportCoords } from "@excalidraw/excalidraw";
 import type { useOthers } from "@liveblocks/react/suspense";
+import { getUserColor } from "@/lib/colors";
 
 interface CollaboratorCursorsProps {
 	others: ReturnType<typeof useOthers>;
@@ -10,7 +9,6 @@ interface CollaboratorCursorsProps {
 }
 
 export function CollaboratorCursors({ others, excalidrawAPI }: CollaboratorCursorsProps) {
-	// Force re-render on animation frames so cursors update when the LOCAL user pans/zooms.
 	const [, forceUpdate] = useState(0);
 	const rafRef = useRef<number>();
 
@@ -25,79 +23,63 @@ export function CollaboratorCursors({ others, excalidrawAPI }: CollaboratorCurso
 		};
 	}, []);
 
+	if (!excalidrawAPI.current) return null;
+
+	const appState = excalidrawAPI.current.getAppState();
+	const { scrollX, scrollY, zoom, offsetLeft, offsetTop } = appState;
+
 	return (
 		<div
 			className="pointer-events-none fixed inset-0 z-50 overflow-hidden"
 			aria-hidden="true"
+			style={{
+				transformOrigin: "0 0",
+				transform: `translate(${offsetLeft}px, ${offsetTop}px) scale(${zoom.value}) translate(${scrollX}px, ${scrollY}px)`,
+			}}
 		>
 			{others.map((other) => {
 				const cursor = other.presence.cursor;
-				const info = other.info;
+				const name = other.presence?.name || other.info?.name || "Anonymous";
+				const color = other.presence?.color || getUserColor(other.connectionId);
 
-				if (!cursor || !info || !excalidrawAPI.current) return null;
-
-				let viewportCoords: { x: number; y: number } | null = null;
-				try {
-					const appState = excalidrawAPI.current.getAppState();
-					viewportCoords = sceneCoordsToViewportCoords(
-						{
-							sceneX: cursor.x,
-							sceneY: cursor.y,
-						},
-						appState
-					);
-				} catch {
-					return null;
-				}
-
-				if (!viewportCoords) return null;
-
-				const { x, y } = viewportCoords;
-
-				// Skip rendering cursors far off screen for performance
-				if (
-					x < -200 ||
-					x > window.innerWidth + 200 ||
-					y < -200 ||
-					y > window.innerHeight + 200
-				) {
-					return null;
-				}
+				if (!cursor) return null;
 
 				return (
 					<div
 						key={other.connectionId}
 						className="absolute"
 						style={{
-							left: x,
-							top: y,
-							transform: "translate(-2px, -2px)",
-							transition: "left 60ms linear, top 60ms linear",
+							left: cursor.x,
+							top: cursor.y,
+							// Invert zoom so cursors stay the same visual size
+							transform: `scale(${1 / zoom.value}) translate(-2px, -2px)`,
+							transformOrigin: "0 0",
+							transition: "left 80ms linear, top 80ms linear",
 						}}
 					>
 						{/* Cursor arrow SVG */}
 						<svg
-							width="18"
-							height="18"
-							viewBox="0 0 18 18"
+							width="24"
+							height="24"
+							viewBox="0 0 24 24"
 							fill="none"
 							xmlns="http://www.w3.org/2000/svg"
+							className="drop-shadow-md"
 						>
 							<path
-								d="M2 2L8.5 16L10.5 10.5L16 8.5L2 2Z"
-								fill={info.color}
+								d="M5.65376 12.3673H5.46026L5.31717 12.4976L0.500002 16.8829L0.500002 1.19841L11.7841 12.3673H5.65376Z"
+								fill={color}
 								stroke="white"
-								strokeWidth="1.5"
-								strokeLinejoin="round"
+								strokeWidth="1.2"
 							/>
 						</svg>
 
 						{/* Name label */}
 						<div
-							className="absolute left-4 top-0 whitespace-nowrap rounded px-1.5 py-0.5 text-xs font-semibold text-white shadow-md"
-							style={{ backgroundColor: info.color }}
+							className="absolute left-3 top-4 whitespace-nowrap rounded-full px-2.5 py-0.5 text-[10px] font-bold text-white shadow-lg backdrop-blur-sm"
+							style={{ backgroundColor: color }}
 						>
-							{info.name || "Anonymous"}
+							{name}
 						</div>
 					</div>
 				);

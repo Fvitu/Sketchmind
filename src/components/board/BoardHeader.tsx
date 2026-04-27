@@ -16,7 +16,7 @@ type ConnectionStatus = "initial" | "connecting" | "connected" | "reconnecting" 
 interface BoardHeaderProps {
   boardId: string;
   boardName: string;
-  canEdit: boolean;
+  canEdit: boolea
   isExporting: boolean;
   saveStatus: SaveStatus;
   connectionStatus?: ConnectionStatus;
@@ -102,7 +102,7 @@ export function BoardHeader({
   };
 
   return (
-    <header className="relative z-10 flex h-14 items-center gap-3 border-b border-border/55 bg-background/72 px-4 backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_28px_-24px_rgba(0,0,0,0.62)] supports-[backdrop-filter]:bg-background/64 supports-[backdrop-filter]:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_28px_-24px_rgba(0,0,0,0.62)] before:pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/[0.04] before:via-transparent before:to-black/[0.03] before:content-['']">
+    <header className="sketchmind-topbar relative z-10 flex h-14 items-center gap-3 border-b border-border/55 bg-background/72 px-4 backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_28px_-24px_rgba(0,0,0,0.62)] supports-[backdrop-filter]:bg-background/64 supports-[backdrop-filter]:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_28px_-24px_rgba(0,0,0,0.62)] before:pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/[0.04] before:via-transparent before:to-black/[0.03] before:content-['']">
       <Link
         to="/dashboard"
         className="text-sm text-muted-foreground transition-colors hover:text-foreground"
@@ -203,14 +203,15 @@ export function BoardHeader({
         size="sm"
         onClick={onExportPNG}
         disabled={isExporting}
-        className="gap-2"
+        className="btn-export gap-2"
+        title="Export PNG"
       >
         {isExporting ? (
           <LoaderCircle className="h-3.5 w-3.5 animate-spin" />
         ) : (
           <Download className="h-3.5 w-3.5" />
         )}
-        Export PNG
+        <span className="btn-export-label">Export PNG</span>
       </Button>
 
       {/* Share button — visible only to the board owner */}
@@ -219,10 +220,11 @@ export function BoardHeader({
           type="button"
           size="sm"
           onClick={() => setIsShareModalOpen(true)}
-          className="gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+          className="btn-share gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+          title="Share"
         >
           <Share2 className="h-3.5 w-3.5" />
-          Share
+          <span className="btn-share-label">Share</span>
         </Button>
       )}
 

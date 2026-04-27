@@ -26,10 +26,10 @@ const MAX_ASSET_SIZE_BYTES = 10 * 1024 * 1024;
 loadEnvFile(envPath);
 
 const runtimeConfig = {
-  googleClientId: process.env.GOOGLE_CLIENT_ID || "",
-  googleEnabled: Boolean(process.env.GOOGLE_CLIENT_ID),
-  magicLinkEnabled: Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM && process.env.AUTH_SECRET),
-  siteUrl: trimTrailingSlash(process.env.NEXT_PUBLIC_SITE_URL || `http://localhost:${port}`),
+	googleClientId: process.env.GOOGLE_CLIENT_ID || "",
+	googleEnabled: Boolean(process.env.GOOGLE_CLIENT_ID),
+	magicLinkEnabled: Boolean(process.env.RESEND_API_KEY && process.env.RESEND_FROM && process.env.AUTH_SECRET),
+	siteUrl: trimTrailingSlash(process.env.NEXT_PUBLIC_SITE_URL || `http://localhost:${port}`),
 };
 
 const googleOAuthClient = createGoogleOAuthClient();
@@ -38,311 +38,373 @@ const liveblocksClient = createLiveblocksClient();
 let vite = null;
 
 if (!isProd) {
-  try {
-    vite = await import("vite").then(({ createServer }) =>
-      createServer({
-        root: rootDir,
-        appType: "spa",
-        server: { middlewareMode: true },
-      }),
-    );
-  } catch (error) {
-    console.warn("Vite middleware mode is unavailable, serving the built app instead.");
-    console.warn(error instanceof Error ? error.message : error);
-  }
+	try {
+		vite = await import("vite").then(({ createServer }) =>
+			createServer({
+				root: rootDir,
+				appType: "spa",
+				server: { middlewareMode: true },
+			}),
+		);
+	} catch (error) {
+		console.warn("Vite middleware mode is unavailable, serving the built app instead.");
+		console.warn(error instanceof Error ? error.message : error);
+	}
 }
 
 export async function handleRequest(req, res) {
-  try {
-    const url = new URL(req.url || "/", `http://${req.headers.host || `localhost:${port}`}`);
+	try {
+		const url = new URL(req.url || "/", `http://${req.headers.host || `localhost:${port}`}`);
 
-    if (url.pathname === "/api/auth/runtime-config" && req.method === "GET") {
-      return json(res, 200, runtimeConfig);
-    }
+		if (url.pathname === "/api/auth/runtime-config" && req.method === "GET") {
+			return json(res, 200, runtimeConfig);
+		}
 
-    if (url.pathname === "/api/auth/magic-link" && req.method === "POST") {
-      return await handleMagicLinkRequest(req, res);
-    }
+		if (url.pathname === "/api/auth/magic-link" && req.method === "POST") {
+			return await handleMagicLinkRequest(req, res);
+		}
 
-    if (url.pathname === "/api/auth/verify-magic-link" && req.method === "GET") {
-      return await handleMagicLinkVerification(url, res);
-    }
+		if (url.pathname === "/api/auth/verify-magic-link" && req.method === "GET") {
+			return await handleMagicLinkVerification(url, res);
+		}
 
-    if (url.pathname === "/api/auth/register-session" && req.method === "POST") {
-      return await handleRegisterSessionRequest(req, res);
-    }
+		if (url.pathname === "/api/auth/register-session" && req.method === "POST") {
+			return await handleRegisterSessionRequest(req, res);
+		}
 
-    if (url.pathname === "/api/auth/session" && req.method === "GET") {
-      return await handleSessionRequest(req, res);
-    }
+		if (url.pathname === "/api/auth/session" && req.method === "GET") {
+			return await handleSessionRequest(req, res);
+		}
 
-    if (url.pathname === "/api/auth/sign-out" && req.method === "POST") {
-      return await handleSignOutRequest(res);
-    }
+		if (url.pathname === "/api/auth/sign-out" && req.method === "POST") {
+			return await handleSignOutRequest(res);
+		}
 
-    if (url.pathname === "/api/profile" && req.method === "PATCH") {
-      return await handleProfileUpdate(req, res);
-    }
+		if (url.pathname === "/api/profile/avatar" && req.method === "POST") {
+			return await handleProfileAvatarUpload(req, res);
+		}
 
-    if (url.pathname === "/api/boards") {
-      return await handleBoardsCollection(req, res);
-    }
+		if (url.pathname === "/api/profile" && req.method === "PATCH") {
+			return await handleProfileUpdate(req, res);
+		}
 
-    if (url.pathname === "/api/liveblocks-auth" && req.method === "POST") {
-      return await handleLiveblocksAuth(req, res);
-    }
+		if (url.pathname === "/api/boards") {
+			return await handleBoardsCollection(req, res);
+		}
 
-    const boardSharePathMatch = url.pathname.match(/^\/api\/boards\/([^/]+)\/share$/);
-    if (boardSharePathMatch) {
-      return await handleBoardShare(req, res, decodeURIComponent(boardSharePathMatch[1]));
-    }
+		if (url.pathname === "/api/liveblocks-auth" && req.method === "POST") {
+			return await handleLiveblocksAuth(req, res);
+		}
 
-    const boardLeavePathMatch = url.pathname.match(/^\/api\/boards\/([^/]+)\/leave$/);
-    if (boardLeavePathMatch) {
-      return await handleBoardLeave(req, res, decodeURIComponent(boardLeavePathMatch[1]));
-    }
+		const boardSharePathMatch = url.pathname.match(/^\/api\/boards\/([^/]+)\/share$/);
+		if (boardSharePathMatch) {
+			return await handleBoardShare(req, res, decodeURIComponent(boardSharePathMatch[1]));
+		}
 
-    const boardJoinPathMatch = url.pathname.match(/^\/api\/boards\/join\/([^/]+)$/);
-    if (boardJoinPathMatch) {
-      return await handleBoardJoinLookup(req, res, decodeURIComponent(boardJoinPathMatch[1]));
-    }
+		const boardLeavePathMatch = url.pathname.match(/^\/api\/boards\/([^/]+)\/leave$/);
+		if (boardLeavePathMatch) {
+			return await handleBoardLeave(req, res, decodeURIComponent(boardLeavePathMatch[1]));
+		}
 
-    const boardAssetsPathMatch = url.pathname.match(/^\/api\/boards\/([^/]+)\/assets$/);
-	if (boardAssetsPathMatch) {
-		return await handleBoardAssetUpload(req, res, decodeURIComponent(boardAssetsPathMatch[1]));
+		const boardJoinPathMatch = url.pathname.match(/^\/api\/boards\/join\/([^/]+)$/);
+		if (boardJoinPathMatch) {
+			return await handleBoardJoinLookup(req, res, decodeURIComponent(boardJoinPathMatch[1]));
+		}
+
+		const boardAssetsPathMatch = url.pathname.match(/^\/api\/boards\/([^/]+)\/assets$/);
+		if (boardAssetsPathMatch) {
+			return await handleBoardAssetUpload(req, res, decodeURIComponent(boardAssetsPathMatch[1]));
+		}
+
+		const boardDuplicatePathMatch = url.pathname.match(/^\/api\/boards\/([^/]+)\/duplicate$/);
+		if (boardDuplicatePathMatch) {
+			return await handleBoardDuplicate(req, res, decodeURIComponent(boardDuplicatePathMatch[1]));
+		}
+
+		const boardPathMatch = url.pathname.match(/^\/api\/boards\/([^/]+)$/);
+		if (boardPathMatch) {
+			return await handleBoardItem(req, res, decodeURIComponent(boardPathMatch[1]));
+		}
+
+		if (url.pathname.startsWith("/api/")) {
+			return json(res, 404, { error: "Not found" });
+		}
+
+		if (!isProd && vite) {
+			return vite.middlewares(req, res, () => {
+				res.statusCode = 404;
+				res.end("Not found");
+			});
+		}
+
+		return await serveStatic(url.pathname, res);
+	} catch (error) {
+		if (error instanceof HttpError) {
+			return json(res, error.statusCode, { error: error.message });
+		}
+
+		console.error(error);
+		return json(res, 500, { error: "Internal server error" });
 	}
-
-    const boardDuplicatePathMatch = url.pathname.match(/^\/api\/boards\/([^/]+)\/duplicate$/);
-	if (boardDuplicatePathMatch) {
-		return await handleBoardDuplicate(req, res, decodeURIComponent(boardDuplicatePathMatch[1]));
-	}
-
-    const boardPathMatch = url.pathname.match(/^\/api\/boards\/([^/]+)$/);
-    if (boardPathMatch) {
-      return await handleBoardItem(req, res, decodeURIComponent(boardPathMatch[1]));
-    }
-
-    if (url.pathname.startsWith("/api/")) {
-      return json(res, 404, { error: "Not found" });
-    }
-
-    if (!isProd && vite) {
-      return vite.middlewares(req, res, () => {
-        res.statusCode = 404;
-        res.end("Not found");
-      });
-    }
-
-    return await serveStatic(url.pathname, res);
-  } catch (error) {
-    if (error instanceof HttpError) {
-      return json(res, error.statusCode, { error: error.message });
-    }
-
-    console.error(error);
-    return json(res, 500, { error: "Internal server error" });
-  }
 }
 
 const isDirectExecution = process.argv[1] && path.resolve(process.argv[1]) === entryFilePath;
 
 if (isDirectExecution) {
-  const server = http.createServer(handleRequest);
-  server.listen(port, () => {
-    console.log(`Sketchmind running at http://localhost:${port}`);
-  });
+	const server = http.createServer(handleRequest);
+	server.listen(port, () => {
+		console.log(`Sketchmind running at http://localhost:${port}`);
+	});
 }
 
 async function handleMagicLinkRequest(req, res) {
-  if (!runtimeConfig.magicLinkEnabled) {
-    return json(res, 503, { error: "Magic link auth is not configured" });
-  }
+	if (!runtimeConfig.magicLinkEnabled) {
+		return json(res, 503, { error: "Magic link auth is not configured" });
+	}
 
-  const body = await readJson(req);
-  const email = normalizeEmail(body?.email);
+	const body = await readJson(req);
+	const email = normalizeEmail(body?.email);
 
-  if (!email) {
-    return json(res, 400, { error: "Enter a valid email address" });
-  }
+	if (!email) {
+		return json(res, 400, { error: "Enter a valid email address" });
+	}
 
-  const token = signMagicToken(email);
-  const loginUrl = new URL("/login", runtimeConfig.siteUrl);
-  loginUrl.searchParams.set("magic_token", token);
-  const emailContent = buildMagicLinkEmail({
-    url: loginUrl.href,
-    host: loginUrl.host,
-    email,
-  });
+	const token = signMagicToken(email);
+	const loginUrl = new URL("/login", runtimeConfig.siteUrl);
+	loginUrl.searchParams.set("magic_token", token);
+	const emailContent = buildMagicLinkEmail({
+		url: loginUrl.href,
+		host: loginUrl.host,
+		email,
+	});
 
-  const resendResponse = await fetch("https://api.resend.com/emails", {
-    method: "POST",
-    headers: {
-      Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
-      from: process.env.RESEND_FROM,
-      to: [email],
-      subject: "Sign in to Sketchmind",
-      html: emailContent.html,
-      text: emailContent.text,
-    }),
-  });
+	const resendResponse = await fetch("https://api.resend.com/emails", {
+		method: "POST",
+		headers: {
+			Authorization: `Bearer ${process.env.RESEND_API_KEY}`,
+			"Content-Type": "application/json",
+		},
+		body: JSON.stringify({
+			from: process.env.RESEND_FROM,
+			to: [email],
+			subject: "Sign in to Sketchmind",
+			html: emailContent.html,
+			text: emailContent.text,
+		}),
+	});
 
-  const resendJson = await resendResponse.json().catch(() => ({}));
-  if (!resendResponse.ok) {
-    return json(res, resendResponse.status, {
-      error: resendJson?.message || resendJson?.error || "Couldn't send magic link",
-    });
-  }
+	const resendJson = await resendResponse.json().catch(() => ({}));
+	if (!resendResponse.ok) {
+		return json(res, resendResponse.status, {
+			error: resendJson?.message || resendJson?.error || "Couldn't send magic link",
+		});
+	}
 
-  return json(res, 200, { ok: true });
+	return json(res, 200, { ok: true });
 }
 
 async function handleMagicLinkVerification(url, res) {
-  const token = url.searchParams.get("token");
-  if (!token) {
-    return json(res, 400, { error: "Missing magic link token" });
-  }
+	const token = url.searchParams.get("token");
+	if (!token) {
+		return json(res, 400, { error: "Missing magic link token" });
+	}
 
-  const email = verifyMagicToken(token);
-  if (!email) {
-    return json(res, 401, { error: "Magic link is invalid or expired" });
-  }
+	const email = verifyMagicToken(token);
+	if (!email) {
+		return json(res, 401, { error: "Magic link is invalid or expired" });
+	}
 
-  const identity = {
-    id: createHash("sha256").update(email).digest("hex"),
-    email,
-    display_name: email.split("@")[0] || "Student",
-    avatar_url: null,
-  };
+	const identity = {
+		id: createHash("sha256").update(email).digest("hex"),
+		email,
+		display_name: email.split("@")[0] || "Student",
+		avatar_url: null,
+	};
 
-  const user = await registerSessionForIdentity(identity, res);
-  return json(res, 200, { user });
+	const user = await registerSessionForIdentity(identity, res);
+	return json(res, 200, { user });
 }
 
 async function handleRegisterSessionRequest(req, res) {
-  const body = await readJson(req);
-  const idToken = typeof body?.id_token === "string" ? body.id_token.trim() : "";
-  const code = typeof body?.code === "string" ? body.code.trim() : "";
+	const body = await readJson(req);
+	const idToken = typeof body?.id_token === "string" ? body.id_token.trim() : "";
+	const code = typeof body?.code === "string" ? body.code.trim() : "";
 
-  if (!idToken && !code) {
+	if (!idToken && !code) {
 		return json(res, 400, { error: "Missing Google ID token or authorization code" });
-  }
+	}
 
-  const identity = idToken ? await verifyGoogleIdToken(idToken) : await verifyGoogleAuthorizationCode(code);
+	const identity = idToken ? await verifyGoogleIdToken(idToken) : await verifyGoogleAuthorizationCode(code);
 
-  const user = await registerSessionForIdentity(identity, res);
-  return json(res, 200, { user });
+	const user = await registerSessionForIdentity(identity, res);
+	return json(res, 200, { user });
 }
 
 async function handleSessionRequest(req, res) {
-  const userId = getSessionUserId(req);
-  if (!userId) {
-    return json(res, 401, { error: "Not signed in" });
-  }
+	const userId = getSessionUserId(req);
+	if (!userId) {
+		return json(res, 401, { error: "Not signed in" });
+	}
 
-  const user = await getUserProfileById(userId);
-  if (!user) {
-    appendSetCookie(res, buildClearedSessionCookie());
-    return json(res, 401, { error: "Session expired" });
-  }
+	const user = await getUserProfileById(userId);
+	if (!user) {
+		appendSetCookie(res, buildClearedSessionCookie());
+		return json(res, 401, { error: "Session expired" });
+	}
 
-  return json(res, 200, { user });
+	return json(res, 200, { user });
 }
 
 async function handleSignOutRequest(res) {
-  appendSetCookie(res, buildClearedSessionCookie());
-  return json(res, 200, { ok: true });
+	appendSetCookie(res, buildClearedSessionCookie());
+	return json(res, 200, { ok: true });
 }
 
 async function handleProfileUpdate(req, res) {
-  const userId = getSessionUserId(req);
-  if (!userId) {
-    return json(res, 401, { error: "Not signed in" });
-  }
+	const userId = getSessionUserId(req);
+	if (!userId) {
+		return json(res, 401, { error: "Not signed in" });
+	}
 
-  const body = await readJson(req);
-  const patch = {};
+	const body = await readJson(req);
+	const patch = {};
 
-  if ("display_name" in body) {
-    if (typeof body.display_name !== "string") {
-      return json(res, 400, { error: "Display name must be a string" });
-    }
+	if ("display_name" in body) {
+		if (typeof body.display_name !== "string") {
+			return json(res, 400, { error: "Display name must be a string" });
+		}
 
-    const displayName = body.display_name.trim();
-    if (!displayName) {
-      return json(res, 400, { error: "Display name can't be empty" });
-    }
+		const displayName = body.display_name.trim();
+		if (!displayName) {
+			return json(res, 400, { error: "Display name can't be empty" });
+		}
 
-    if (displayName.length > 60) {
-      return json(res, 400, { error: "Keep it under 60 characters" });
-    }
+		if (displayName.length > 60) {
+			return json(res, 400, { error: "Keep it under 60 characters" });
+		}
 
-    patch.display_name = displayName;
-  }
+		patch.display_name = displayName;
+	}
 
-  if ("avatar_url" in body) {
-    if (body.avatar_url === null || body.avatar_url === "") {
-      patch.avatar_url = null;
-    } else if (typeof body.avatar_url === "string") {
-      const avatar = body.avatar_url.trim();
-      if (!/^https?:\/\//i.test(avatar)) {
-        return json(res, 400, { error: "Avatar must be a valid URL" });
-      }
+	if ("avatar_url" in body) {
+		if (body.avatar_url === null || body.avatar_url === "") {
+			patch.avatar_url = null;
+		} else if (typeof body.avatar_url === "string") {
+			const avatar = body.avatar_url.trim();
+			if (!/^https?:\/\//i.test(avatar)) {
+				return json(res, 400, { error: "Avatar must be a valid URL" });
+			}
 
-      patch.avatar_url = avatar;
-    } else {
-      return json(res, 400, { error: "Avatar must be a valid URL" });
-    }
-  }
+			patch.avatar_url = avatar;
+		} else {
+			return json(res, 400, { error: "Avatar must be a valid URL" });
+		}
+	}
 
-  if (Object.keys(patch).length === 0) {
-    const current = await getUserProfileById(userId);
-    if (!current) {
-      return json(res, 404, { error: "User not found" });
-    }
+	if (Object.keys(patch).length === 0) {
+		const current = await getUserProfileById(userId);
+		if (!current) {
+			return json(res, 404, { error: "User not found" });
+		}
 
-    return json(res, 200, { user: current });
-  }
+		return json(res, 200, { user: current });
+	}
 
-  const client = getSupabaseClient();
-  const { data, error } = await client
-    .from("profiles")
-    .update({ ...patch, updated_at: new Date().toISOString() })
-    .eq("id", userId)
-    .select("id,email,display_name,avatar_url,created_at")
-    .maybeSingle();
+	const client = getSupabaseClient();
+	const { data, error } = await client
+		.from("profiles")
+		.update({ ...patch, updated_at: new Date().toISOString() })
+		.eq("id", userId)
+		.select("id,email,display_name,avatar_url,created_at")
+		.maybeSingle();
 
-  if (error) {
-    throw new HttpError(500, userFacingDatabaseError(error.message));
-  }
+	if (error) {
+		throw new HttpError(500, userFacingDatabaseError(error.message));
+	}
 
-  if (!data) {
-    return json(res, 404, { error: "User not found" });
-  }
+	if (!data) {
+		return json(res, 404, { error: "User not found" });
+	}
 
-  return json(res, 200, { user: mapUserRow(data) });
+	return json(res, 200, { user: mapUserRow(data) });
+}
+
+async function handleProfileAvatarUpload(req, res) {
+	const userId = getSessionUserId(req);
+	if (!userId) {
+		return json(res, 401, { error: "Not signed in" });
+	}
+
+	const formData = await readFormData(req);
+	const file = formData.get("file");
+
+	if (!(file instanceof File)) {
+		return json(res, 400, { error: "No file provided" });
+	}
+
+	if (!ALLOWED_ASSET_MIME_TYPES.has(file.type)) {
+		return json(res, 400, { error: "File type not allowed" });
+	}
+
+	if (file.size > 5 * 1024 * 1024) {
+		return json(res, 400, { error: "File too large (max 5MB)" });
+	}
+
+	const extension = safeFileExtension(file);
+	const storagePath = `${userId}/avatar.${extension}`;
+	const buffer = Buffer.from(await file.arrayBuffer());
+	const client = getSupabaseClient();
+
+	const { error: uploadError } = await client.storage.from("avatars").upload(storagePath, buffer, {
+		contentType: file.type,
+		upsert: true,
+	});
+
+	if (uploadError) {
+		throw new HttpError(500, uploadError.message);
+	}
+
+	// Clean up any old files with different extensions
+	await cleanupPreviousAvatars(userId, storagePath);
+
+	const { data: publicUrlData } = client.storage.from("avatars").getPublicUrl(storagePath);
+	const publicUrl = publicUrlData.publicUrl;
+
+	const { data: profileData, error: dbError } = await client
+		.from("profiles")
+		.update({ avatar_url: publicUrl, updated_at: new Date().toISOString() })
+		.eq("id", userId)
+		.select("id,email,display_name,avatar_url,created_at")
+		.maybeSingle();
+
+	if (dbError) {
+		throw new HttpError(500, userFacingDatabaseError(dbError.message));
+	}
+
+	return json(res, 200, {
+		user: mapUserRow(profileData),
+		url: publicUrl,
+	});
 }
 
 async function handleBoardsCollection(req, res) {
-  const userId = getSessionUserId(req);
-  if (!userId) {
-    return json(res, 401, { error: "Not signed in" });
-  }
+	const userId = getSessionUserId(req);
+	if (!userId) {
+		return json(res, 401, { error: "Not signed in" });
+	}
 
-  if (req.method === "GET") {
-    const boards = await listBoardsForUser(userId);
-    return json(res, 200, { boards });
-  }
+	if (req.method === "GET") {
+		const boards = await listBoardsForUser(userId);
+		return json(res, 200, { boards });
+	}
 
-  if (req.method === "POST") {
-    const body = await readJson(req);
-    const created = await createBoardForUser(userId, body?.title, body?.id, body);
-    return json(res, 200, { board: created });
-  }
+	if (req.method === "POST") {
+		const body = await readJson(req);
+		const created = await createBoardForUser(userId, body?.title, body?.id, body);
+		return json(res, 200, { board: created });
+	}
 
-  return json(res, 405, { error: "Method not allowed" });
+	return json(res, 405, { error: "Method not allowed" });
 }
 
 async function handleBoardDuplicate(req, res, boardId) {
@@ -360,32 +422,32 @@ async function handleBoardDuplicate(req, res, boardId) {
 }
 
 async function handleBoardItem(req, res, boardId) {
-  const userId = getSessionUserId(req);
-  if (!userId) {
-    return json(res, 401, { error: "Not signed in" });
-  }
+	const userId = getSessionUserId(req);
+	if (!userId) {
+		return json(res, 401, { error: "Not signed in" });
+	}
 
-  if (req.method === "GET") {
-    const board = await getBoardForUser(userId, boardId);
-    if (!board) {
-      return json(res, 404, { error: "Board not found" });
-    }
+	if (req.method === "GET") {
+		const board = await getBoardForUser(userId, boardId);
+		if (!board) {
+			return json(res, 404, { error: "Board not found" });
+		}
 
-    return json(res, 200, { board });
-  }
+		return json(res, 200, { board });
+	}
 
-  if (req.method === "PATCH") {
-    const body = await readJson(req);
-    const updated = await updateBoardForUser(userId, boardId, body);
-	return json(res, 200, { board: updated });
-  }
+	if (req.method === "PATCH") {
+		const body = await readJson(req);
+		const updated = await updateBoardForUser(userId, boardId, body);
+		return json(res, 200, { board: updated });
+	}
 
-  if (req.method === "DELETE") {
-    await deleteBoardForUser(userId, boardId);
-    return json(res, 200, { ok: true });
-  }
+	if (req.method === "DELETE") {
+		await deleteBoardForUser(userId, boardId);
+		return json(res, 200, { ok: true });
+	}
 
-  return json(res, 405, { error: "Method not allowed" });
+	return json(res, 405, { error: "Method not allowed" });
 }
 
 async function handleBoardAssetUpload(req, res, boardId) {
@@ -459,15 +521,15 @@ async function handleBoardAssetUpload(req, res, boardId) {
 }
 
 async function registerSessionForIdentity(identity, res) {
-  const user = await persistUserProfile(identity);
-  const token = signSessionToken(user.id);
-  appendSetCookie(res, buildSessionCookie(token));
-  return user;
+	const user = await persistUserProfile(identity);
+	const token = signSessionToken(user.id);
+	appendSetCookie(res, buildSessionCookie(token));
+	return user;
 }
 
 async function getUserProfileByEmail(email) {
 	const client = getSupabaseClient();
-  const { data, error } = await client.from("profiles").select("*").eq("email", email).maybeSingle();
+	const { data, error } = await client.from("profiles").select("*").eq("email", email).maybeSingle();
 
 	if (error) {
 		throw new HttpError(500, userFacingDatabaseError(error.message));
@@ -481,43 +543,54 @@ async function getUserProfileByEmail(email) {
 }
 
 function normalizeIncomingUser(input) {
-  if (!input || typeof input !== "object") {
-    return null;
-  }
+	if (!input || typeof input !== "object") {
+		return null;
+	}
 
-  const email = normalizeEmail(input.email);
-  if (!email) {
-    return null;
-  }
+	const email = normalizeEmail(input.email);
+	if (!email) {
+		return null;
+	}
 
-  const id = typeof input.id === "string" && input.id.trim() ? input.id.trim() : createHash("sha256").update(email).digest("hex");
-  const display_name =
-    typeof input.display_name === "string" && input.display_name.trim()
-      ? input.display_name.trim().slice(0, 60)
-      : email.split("@")[0] || "Student";
-  const avatar_url =
-    typeof input.avatar_url === "string" && /^https?:\/\//i.test(input.avatar_url.trim()) ? input.avatar_url.trim() : null;
+	const id = typeof input.id === "string" && input.id.trim() ? input.id.trim() : createHash("sha256").update(email).digest("hex");
+	const display_name =
+		typeof input.display_name === "string" && input.display_name.trim() ? input.display_name.trim().slice(0, 60) : email.split("@")[0] || "Student";
+	const avatar_url = typeof input.avatar_url === "string" && /^https?:\/\//i.test(input.avatar_url.trim()) ? input.avatar_url.trim() : null;
 
-  return {
-    id,
-    email,
-    display_name,
-    avatar_url,
-  };
+	return {
+		id,
+		email,
+		display_name,
+		avatar_url,
+	};
 }
 
 async function persistUserProfile(identity) {
-  const client = getSupabaseClient();
-  const now = new Date().toISOString();
+	const client = getSupabaseClient();
+	const now = new Date().toISOString();
 
-  const existing = await getUserProfileByEmail(identity.email);
-  if (existing) {
+	const existing = await getUserProfileByEmail(identity.email);
+	let finalAvatarUrl = identity.avatar_url;
+
+	const needsAvatarUpload =
+		identity.avatar_url && (!existing || !existing.avatar_url || existing.avatar_url.includes("lh3.googleusercontent.com"));
+
+	if (needsAvatarUpload) {
+		const uploadedUrl = await uploadAvatarToSupabase(identity.id, identity.avatar_url);
+		if (uploadedUrl) {
+			finalAvatarUrl = uploadedUrl;
+		}
+	} else if (existing && existing.avatar_url && !existing.avatar_url.includes("lh3.googleusercontent.com")) {
+		finalAvatarUrl = existing.avatar_url;
+	}
+
+	if (existing) {
 		const { data, error } = await client
 			.from("profiles")
 			.update({
 				email: identity.email,
 				display_name: identity.display_name,
-				avatar_url: identity.avatar_url,
+				avatar_url: finalAvatarUrl,
 				updated_at: now,
 			})
 			.eq("id", existing.id)
@@ -529,131 +602,180 @@ async function persistUserProfile(identity) {
 		}
 
 		return mapUserRow(data);
-  }
+	}
 
-  const { data, error } = await client
+	const { data, error } = await client
 		.from("profiles")
 		.insert({
 			id: identity.id,
 			email: identity.email,
 			display_name: identity.display_name,
-			avatar_url: identity.avatar_url,
+			avatar_url: finalAvatarUrl,
 			created_at: now,
 			updated_at: now,
 		})
 		.select("*")
 		.single();
 
-  if (error || !data) {
-    if (error?.code === "23505") {
-		const fallback = await getUserProfileByEmail(identity.email);
-		if (fallback) {
-			const { data: updatedData, error: updateError } = await client
-				.from("profiles")
-				.update({
-					email: identity.email,
-					display_name: identity.display_name,
-					avatar_url: identity.avatar_url,
-					updated_at: now,
-				})
-				.eq("id", fallback.id)
-				.select("*")
-				.single();
+	if (error || !data) {
+		if (error?.code === "23505") {
+			const fallback = await getUserProfileByEmail(identity.email);
+			if (fallback) {
+				const { data: updatedData, error: updateError } = await client
+					.from("profiles")
+					.update({
+						email: identity.email,
+						display_name: identity.display_name,
+						avatar_url: finalAvatarUrl,
+						updated_at: now,
+					})
+					.eq("id", fallback.id)
+					.select("*")
+					.single();
 
-			if (!updateError && updatedData) {
-				return mapUserRow(updatedData);
+				if (!updateError && updatedData) {
+					return mapUserRow(updatedData);
+				}
 			}
 		}
+
+		throw new HttpError(500, userFacingDatabaseError(error?.message || "Couldn't save your account"));
 	}
 
-    throw new HttpError(500, userFacingDatabaseError(error?.message || "Couldn't save your account"));
-  }
+	return mapUserRow(data);
+}
 
-  return mapUserRow(data);
+async function uploadAvatarToSupabase(userId, sourceUrl) {
+	try {
+		const response = await fetch(sourceUrl);
+		if (!response.ok) return null;
+		const arrayBuffer = await response.arrayBuffer();
+		const buffer = Buffer.from(arrayBuffer);
+		const contentType = response.headers.get("content-type") || "image/jpeg";
+
+		let ext = "jpg";
+		if (contentType.includes("png")) ext = "png";
+		if (contentType.includes("webp")) ext = "webp";
+		if (contentType.includes("gif")) ext = "gif";
+
+		const client = getSupabaseClient();
+		const path = `${userId}/avatar.${ext}`;
+
+		const { error: uploadError } = await client.storage.from("avatars").upload(path, buffer, {
+			contentType,
+			upsert: true,
+		});
+
+		if (uploadError) {
+			console.error("Avatar auto-upload failed:", uploadError);
+			return null;
+		}
+
+		// Clean up any old files with different extensions
+		await cleanupPreviousAvatars(userId, path);
+
+		const { data } = client.storage.from("avatars").getPublicUrl(path);
+		return data.publicUrl;
+	} catch (err) {
+		console.error("Avatar fetch/upload failed:", err);
+		return null;
+	}
+}
+
+async function cleanupPreviousAvatars(userId, currentPath) {
+	try {
+		const client = getSupabaseClient();
+		const { data: files } = await client.storage.from("avatars").list(userId);
+		if (files) {
+			const currentFilename = currentPath.split("/").pop();
+			const toDelete = files.filter((f) => f.name !== currentFilename && f.name !== ".emptyKeep").map((f) => `${userId}/${f.name}`);
+			if (toDelete.length > 0) {
+				await client.storage.from("avatars").remove(toDelete);
+			}
+		}
+	} catch (err) {
+		console.error("Failed to cleanup old avatars:", err);
+	}
 }
 
 async function getUserProfileById(userId) {
-  const client = getSupabaseClient();
-  const { data, error } = await client.from("profiles").select("*").eq("id", userId).maybeSingle();
+	const client = getSupabaseClient();
+	const { data, error } = await client.from("profiles").select("*").eq("id", userId).maybeSingle();
 
-  if (error) {
-    throw new HttpError(500, userFacingDatabaseError(error.message));
-  }
+	if (error) {
+		throw new HttpError(500, userFacingDatabaseError(error.message));
+	}
 
-  if (!data) {
-    return null;
-  }
+	if (!data) {
+		return null;
+	}
 
-  return mapUserRow(data);
+	return mapUserRow(data);
 }
 
 async function listBoardsForUser(userId) {
-  const client = getSupabaseClient();
-  const boardFields = "id,owner_id,title,description,visibility,thumbnail_path,canvas_state,created_at,last_edited_at";
+	const client = getSupabaseClient();
+	const boardFields = "id,owner_id,title,description,visibility,thumbnail_path,canvas_state,created_at,last_edited_at";
 
-  const { data: ownedBoards, error: ownedError } = await client
-    .from("boards")
-    .select(boardFields)
-    .eq("owner_id", userId)
-    .order("last_edited_at", { ascending: false });
+	const { data: ownedBoards, error: ownedError } = await client
+		.from("boards")
+		.select(boardFields)
+		.eq("owner_id", userId)
+		.order("last_edited_at", { ascending: false });
 
-  if (ownedError) {
-    throw new HttpError(500, userFacingDatabaseError(ownedError.message));
-  }
+	if (ownedError) {
+		throw new HttpError(500, userFacingDatabaseError(ownedError.message));
+	}
 
-  const { data: memberships } = await client
-    .from("board_members")
-    .select("board_id, role, is_shared_with_me")
-    .eq("user_id", userId)
-    .eq("is_shared_with_me", true);
+	const { data: memberships } = await client
+		.from("board_members")
+		.select("board_id, role, is_shared_with_me")
+		.eq("user_id", userId)
+		.eq("is_shared_with_me", true);
 
-  const sharedBoardIds = (memberships ?? []).map((m) => m.board_id);
-  let sharedBoards = [];
+	const sharedBoardIds = (memberships ?? []).map((m) => m.board_id);
+	let sharedBoards = [];
 
-  if (sharedBoardIds.length > 0) {
-    const { data: shared } = await client
-      .from("boards")
-      .select(boardFields)
-      .in("id", sharedBoardIds)
-      .order("last_edited_at", { ascending: false });
+	if (sharedBoardIds.length > 0) {
+		const { data: shared } = await client.from("boards").select(boardFields).in("id", sharedBoardIds).order("last_edited_at", { ascending: false });
 
-    const roleMap = {};
-    for (const m of memberships ?? []) {
-      roleMap[m.board_id] = m.role;
-    }
+		const roleMap = {};
+		for (const m of memberships ?? []) {
+			roleMap[m.board_id] = m.role;
+		}
 
-    sharedBoards = (shared ?? []).map((b) => ({ ...b, role: roleMap[b.id] ?? "editor" }));
-  }
+		sharedBoards = (shared ?? []).map((b) => ({ ...b, role: roleMap[b.id] ?? "editor" }));
+	}
 
-  const owned = (ownedBoards ?? []).map((b) => ({ ...b, role: "owner" }));
-  return [...owned, ...sharedBoards];
+	const owned = (ownedBoards ?? []).map((b) => ({ ...b, role: "owner" }));
+	return [...owned, ...sharedBoards];
 }
 
 async function getBoardForUser(userId, boardId) {
-  const access = await getBoardAccessForUser(userId, boardId);
-  if (!access) {
+	const access = await getBoardAccessForUser(userId, boardId);
+	if (!access) {
 		return null;
-  }
+	}
 
-  const client = getSupabaseClient();
-  const { data, error } = await client
+	const client = getSupabaseClient();
+	const { data, error } = await client
 		.from("boards")
 		.select("id,owner_id,title,description,visibility,thumbnail_path,canvas_state,created_at,last_edited_at")
 		.eq("id", boardId)
 		.maybeSingle();
 
-  if (error) {
-    throw new HttpError(500, userFacingDatabaseError(error.message));
-  }
+	if (error) {
+		throw new HttpError(500, userFacingDatabaseError(error.message));
+	}
 
-  if (!data) {
+	if (!data) {
 		return null;
-  }
+	}
 
-  return {
+	return {
 		...data,
 		role: access.role,
-  };
+	};
 }
 
 async function createBoardForUser(userId, rawTitle, rawId, template = null) {
@@ -719,36 +841,36 @@ async function duplicateBoardForUser(userId, boardId) {
 }
 
 async function renameBoardForUser(userId, boardId, rawTitle) {
-  if (typeof rawTitle !== "string") {
-    throw new HttpError(400, "Title is required");
-  }
+	if (typeof rawTitle !== "string") {
+		throw new HttpError(400, "Title is required");
+	}
 
-  const title = rawTitle.trim();
-  if (!title) {
-    throw new HttpError(400, "Title can't be empty");
-  }
+	const title = rawTitle.trim();
+	if (!title) {
+		throw new HttpError(400, "Title can't be empty");
+	}
 
-  const client = getSupabaseClient();
-  const { data, error } = await client
-    .from("boards")
-    .update({
-      title: title.slice(0, 80),
-      last_edited_at: new Date().toISOString(),
-    })
-    .eq("id", boardId)
-    .eq("owner_id", userId)
-    .select("id,owner_id,title,description,visibility,thumbnail_path,canvas_state,created_at,last_edited_at")
-    .maybeSingle();
+	const client = getSupabaseClient();
+	const { data, error } = await client
+		.from("boards")
+		.update({
+			title: title.slice(0, 80),
+			last_edited_at: new Date().toISOString(),
+		})
+		.eq("id", boardId)
+		.eq("owner_id", userId)
+		.select("id,owner_id,title,description,visibility,thumbnail_path,canvas_state,created_at,last_edited_at")
+		.maybeSingle();
 
-  if (error) {
-    throw new HttpError(500, userFacingDatabaseError(error.message));
-  }
+	if (error) {
+		throw new HttpError(500, userFacingDatabaseError(error.message));
+	}
 
-  if (!data) {
-    throw new HttpError(404, "Board not found");
-  }
+	if (!data) {
+		throw new HttpError(404, "Board not found");
+	}
 
-  return data;
+	return data;
 }
 
 async function updateBoardForUser(userId, boardId, body) {
@@ -811,22 +933,16 @@ async function updateBoardForUser(userId, boardId, body) {
 }
 
 async function deleteBoardForUser(userId, boardId) {
-  const client = getSupabaseClient();
-  const { data, error } = await client
-    .from("boards")
-    .delete()
-    .eq("id", boardId)
-    .eq("owner_id", userId)
-    .select("id")
-    .maybeSingle();
+	const client = getSupabaseClient();
+	const { data, error } = await client.from("boards").delete().eq("id", boardId).eq("owner_id", userId).select("id").maybeSingle();
 
-  if (error) {
-    throw new HttpError(500, userFacingDatabaseError(error.message));
-  }
+	if (error) {
+		throw new HttpError(500, userFacingDatabaseError(error.message));
+	}
 
-  if (!data) {
-    throw new HttpError(404, "Board not found");
-  }
+	if (!data) {
+		throw new HttpError(404, "Board not found");
+	}
 }
 
 async function getBoardAccessForUser(userId, boardId) {
@@ -864,44 +980,44 @@ async function getBoardAccessForUser(userId, boardId) {
 }
 
 function mapUserRow(row) {
-  return {
+	return {
 		id: row.id,
 		email: row.email,
 		display_name: row.display_name,
 		avatar_url: row.avatar_url,
 		board_limit: typeof row.board_limit === "number" && row.board_limit > 0 ? row.board_limit : DEFAULT_BOARD_LIMIT,
 		created_at: row.created_at,
-  };
+	};
 }
 
 async function verifyGoogleIdToken(idToken) {
-  const client = getGoogleOAuthClient();
-  const ticket = await client.verifyIdToken({
-    idToken,
-    audience: runtimeConfig.googleClientId,
-  });
+	const client = getGoogleOAuthClient();
+	const ticket = await client.verifyIdToken({
+		idToken,
+		audience: runtimeConfig.googleClientId,
+	});
 
-  const payload = ticket.getPayload();
-  if (!payload) {
-    throw new HttpError(401, "Google sign-in response is missing required fields");
-  }
+	const payload = ticket.getPayload();
+	if (!payload) {
+		throw new HttpError(401, "Google sign-in response is missing required fields");
+	}
 
-  if (payload.email_verified === false) {
-    throw new HttpError(401, "Google email address is not verified");
-  }
+	if (payload.email_verified === false) {
+		throw new HttpError(401, "Google email address is not verified");
+	}
 
-  const identity = normalizeIncomingUser({
-    id: payload.sub,
-    email: payload.email,
-    display_name: payload.name,
-    avatar_url: payload.picture,
-  });
+	const identity = normalizeIncomingUser({
+		id: payload.sub,
+		email: payload.email,
+		display_name: payload.name,
+		avatar_url: payload.picture,
+	});
 
-  if (!identity) {
-    throw new HttpError(401, "Google sign-in response is missing required fields");
-  }
+	if (!identity) {
+		throw new HttpError(401, "Google sign-in response is missing required fields");
+	}
 
-  return identity;
+	return identity;
 }
 
 async function verifyGoogleAuthorizationCode(code) {
@@ -966,390 +1082,351 @@ function extractGoogleOAuthError(error) {
 }
 
 function getGoogleOAuthClient() {
-  if (!googleOAuthClient) {
-    throw new HttpError(503, "Google sign-in is not configured");
-  }
+	if (!googleOAuthClient) {
+		throw new HttpError(503, "Google sign-in is not configured");
+	}
 
-  return googleOAuthClient;
+	return googleOAuthClient;
 }
 
 function createSupabaseClient() {
-  const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
-  const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
+	const supabaseUrl = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+	const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY || "";
 
-  if (!supabaseUrl || !supabaseKey) {
-    return null;
-  }
+	if (!supabaseUrl || !supabaseKey) {
+		return null;
+	}
 
-  return createClient(supabaseUrl, supabaseKey, {
-    auth: {
-      persistSession: false,
-      autoRefreshToken: false,
-    },
-  });
+	return createClient(supabaseUrl, supabaseKey, {
+		auth: {
+			persistSession: false,
+			autoRefreshToken: false,
+		},
+	});
 }
 
 function createLiveblocksClient() {
-  const secret = process.env.LIVEBLOCKS_SECRET_KEY || "";
-  if (!secret) {
-    return null;
-  }
-  return new Liveblocks({ secret });
+	const secret = process.env.LIVEBLOCKS_SECRET_KEY || "";
+	if (!secret) {
+		return null;
+	}
+	return new Liveblocks({ secret });
 }
 
 function getLiveblocksClient() {
-  if (!liveblocksClient) {
-    throw new HttpError(503, "Liveblocks is not configured. Add LIVEBLOCKS_SECRET_KEY to .env.");
-  }
-  return liveblocksClient;
+	if (!liveblocksClient) {
+		throw new HttpError(503, "Liveblocks is not configured. Add LIVEBLOCKS_SECRET_KEY to .env.");
+	}
+	return liveblocksClient;
 }
 
-const COLLABORATOR_COLORS = [
-  "#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6",
-  "#EC4899", "#06B6D4", "#84CC16", "#F97316", "#6366F1",
-];
+const COLLABORATOR_COLORS = ["#3B82F6", "#10B981", "#F59E0B", "#EF4444", "#8B5CF6", "#EC4899", "#06B6D4", "#84CC16", "#F97316", "#6366F1"];
 
 function getUserColor(userId) {
-  const hash = userId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
-  return COLLABORATOR_COLORS[hash % COLLABORATOR_COLORS.length];
+	const hash = userId.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+	return COLLABORATOR_COLORS[hash % COLLABORATOR_COLORS.length];
 }
 
 async function handleLiveblocksAuth(req, res) {
-  const userId = getSessionUserId(req);
-  if (!userId) {
-    return json(res, 401, { error: "Unauthorized" });
-  }
+	const userId = getSessionUserId(req);
+	if (!userId) {
+		return json(res, 401, { error: "Unauthorized" });
+	}
 
-  const body = await readJson(req);
-  const { room } = body;
-  if (!room || typeof room !== "string" || !room.startsWith("board-")) {
-    return json(res, 400, { error: "Invalid room ID" });
-  }
+	const body = await readJson(req);
+	const { room } = body;
+	if (!room || typeof room !== "string" || !room.startsWith("board-")) {
+		return json(res, 400, { error: "Invalid room ID" });
+	}
 
-  const boardId = room.replace("board-", "");
-  const client = getSupabaseClient();
+	const boardId = room.replace("board-", "");
+	const client = getSupabaseClient();
 
-  // Check the user has access to this board (owner or member)
-  const access = await getBoardAccessForUser(userId, boardId);
-  if (!access) {
-    // Check if the board is shared via link (visibility = 'shared')
-    const { data: board } = await client.from("boards").select("id, visibility").eq("id", boardId).maybeSingle();
-    if (!board || board.visibility !== "shared") {
-      return json(res, 403, { error: "Forbidden" });
-    }
-  }
+	// Check the user has access to this board (owner or member)
+	const access = await getBoardAccessForUser(userId, boardId);
+	if (!access) {
+		// Check if the board is shared via link (visibility = 'shared')
+		const { data: board } = await client.from("boards").select("id, visibility").eq("id", boardId).maybeSingle();
+		if (!board || board.visibility !== "shared") {
+			return json(res, 403, { error: "Forbidden" });
+		}
+	}
 
-  // Get the user's profile
-  const profile = await getUserProfileById(userId);
-  const userName = profile?.display_name ?? "Anonymous";
-  const userAvatar = profile?.avatar_url ?? "";
-  const userColor = getUserColor(userId);
+	// Get the user's profile
+	const profile = await getUserProfileById(userId);
+	const userName = profile?.display_name ?? "Anonymous";
+	const userAvatar = profile?.avatar_url ?? "";
+	const userColor = getUserColor(userId);
 
-  const liveblocks = getLiveblocksClient();
-  const session = liveblocks.prepareSession(userId, {
-    userInfo: {
-      name: userName,
-      email: profile?.email ?? "",
-      avatar: userAvatar,
-      color: userColor,
-    },
-  });
+	const liveblocks = getLiveblocksClient();
+	const session = liveblocks.prepareSession(userId, {
+		userInfo: {
+			name: userName,
+			email: profile?.email ?? "",
+			avatar: userAvatar,
+			color: userColor,
+		},
+	});
 
-  session.allow(room, session.FULL_ACCESS);
+	session.allow(room, session.FULL_ACCESS);
 
-  const { status, body: responseBody } = await session.authorize();
-  res.writeHead(status, { "Content-Type": "application/json" });
-  res.end(responseBody);
+	const { status, body: responseBody } = await session.authorize();
+	res.writeHead(status, { "Content-Type": "application/json" });
+	res.end(responseBody);
 }
 
 async function handleBoardShare(req, res, boardId) {
-  const userId = getSessionUserId(req);
-  if (!userId) {
-    return json(res, 401, { error: "Not signed in" });
-  }
+	const userId = getSessionUserId(req);
+	if (!userId) {
+		return json(res, 401, { error: "Not signed in" });
+	}
 
-  const client = getSupabaseClient();
+	const client = getSupabaseClient();
 
-  if (req.method === "POST") {
-    // Generate share link — owner only
-    const { data: board, error } = await client
-      .from("boards")
-      .select("id, owner_id, share_token")
-      .eq("id", boardId)
-      .eq("owner_id", userId)
-      .maybeSingle();
+	if (req.method === "POST") {
+		// Generate share link — owner only
+		const { data: board, error } = await client.from("boards").select("id, owner_id, share_token").eq("id", boardId).eq("owner_id", userId).maybeSingle();
 
-    if (error || !board) {
-      return json(res, 404, { error: "Board not found or not owner" });
-    }
+		if (error || !board) {
+			return json(res, 404, { error: "Board not found or not owner" });
+		}
 
-    let token = board.share_token;
-    if (!token) {
-      token = randomBytes(16).toString("hex");
-      const { error: updateError } = await client
-        .from("boards")
-        .update({ share_token: token, visibility: "shared" })
-        .eq("id", boardId);
+		let token = board.share_token;
+		if (!token) {
+			token = randomBytes(16).toString("hex");
+			const { error: updateError } = await client.from("boards").update({ share_token: token, visibility: "shared" }).eq("id", boardId);
 
-      if (updateError) {
-        return json(res, 500, { error: "Failed to generate share token" });
-      }
-    }
+			if (updateError) {
+				return json(res, 500, { error: "Failed to generate share token" });
+			}
+		}
 
-    return json(res, 200, { token, shareUrl: `/join/${token}` });
-  }
+		return json(res, 200, { token, shareUrl: `/join/${token}` });
+	}
 
-  if (req.method === "DELETE") {
-    // Revoke share link — owner only
-    const { error } = await client
-      .from("boards")
-      .update({ share_token: null, visibility: "private" })
-      .eq("id", boardId)
-      .eq("owner_id", userId);
+	if (req.method === "DELETE") {
+		// Revoke share link — owner only
+		const { error } = await client.from("boards").update({ share_token: null, visibility: "private" }).eq("id", boardId).eq("owner_id", userId);
 
-    if (error) {
-      return json(res, 500, { error: "Failed to revoke share link" });
-    }
+		if (error) {
+			return json(res, 500, { error: "Failed to revoke share link" });
+		}
 
-    return json(res, 200, { ok: true });
-  }
+		return json(res, 200, { ok: true });
+	}
 
-  return json(res, 405, { error: "Method not allowed" });
+	return json(res, 405, { error: "Method not allowed" });
 }
 
 async function handleBoardLeave(req, res, boardId) {
-  if (req.method !== "DELETE") {
-    return json(res, 405, { error: "Method not allowed" });
-  }
+	if (req.method !== "DELETE") {
+		return json(res, 405, { error: "Method not allowed" });
+	}
 
-  const userId = getSessionUserId(req);
-  if (!userId) {
-    return json(res, 401, { error: "Not signed in" });
-  }
+	const userId = getSessionUserId(req);
+	if (!userId) {
+		return json(res, 401, { error: "Not signed in" });
+	}
 
-  const client = getSupabaseClient();
-  const { error } = await client
-    .from("board_members")
-    .delete()
-    .eq("board_id", boardId)
-    .eq("user_id", userId);
+	const client = getSupabaseClient();
+	const { error } = await client.from("board_members").delete().eq("board_id", boardId).eq("user_id", userId);
 
-  if (error) {
-    return json(res, 500, { error: "Failed to leave board" });
-  }
+	if (error) {
+		return json(res, 500, { error: "Failed to leave board" });
+	}
 
-  return json(res, 200, { ok: true });
+	return json(res, 200, { ok: true });
 }
 
 async function handleBoardJoinLookup(req, res, token) {
-  if (req.method !== "POST") {
-    return json(res, 405, { error: "Method not allowed" });
-  }
+	if (req.method !== "POST") {
+		return json(res, 405, { error: "Method not allowed" });
+	}
 
-  const userId = getSessionUserId(req);
-  if (!userId) {
-    return json(res, 401, { error: "Not signed in" });
-  }
+	const userId = getSessionUserId(req);
+	if (!userId) {
+		return json(res, 401, { error: "Not signed in" });
+	}
 
-  const client = getSupabaseClient();
+	const client = getSupabaseClient();
 
-  // Find board by share token
-  const { data: board, error } = await client
-    .from("boards")
-    .select("id, owner_id, visibility, title")
-    .eq("share_token", token)
-    .maybeSingle();
+	// Find board by share token
+	const { data: board, error } = await client.from("boards").select("id, owner_id, visibility, title").eq("share_token", token).maybeSingle();
 
-  if (error || !board || board.visibility !== "shared") {
-    return json(res, 404, { error: "Invalid or expired share link" });
-  }
+	if (error || !board || board.visibility !== "shared") {
+		return json(res, 404, { error: "Invalid or expired share link" });
+	}
 
-  // Add to board_members if not already owner
-  if (board.owner_id !== userId) {
-    // Check current member count (max 5 collaborators including owner)
-    const { count } = await client
-      .from("board_members")
-      .select("user_id", { count: "exact", head: true })
-      .eq("board_id", board.id);
+	// Add to board_members if not already owner
+	if (board.owner_id !== userId) {
+		// Check current member count (max 5 collaborators including owner)
+		const { count } = await client.from("board_members").select("user_id", { count: "exact", head: true }).eq("board_id", board.id);
 
-    if ((count ?? 0) >= 4) {
-      return json(res, 409, { error: "This board has reached the maximum of 5 collaborators" });
-    }
+		if ((count ?? 0) >= 4) {
+			return json(res, 409, { error: "This board has reached the maximum of 5 collaborators" });
+		}
 
-    // Upsert — if already member, this is a no-op
-    await client
-      .from("board_members")
-      .upsert(
-        {
-          board_id: board.id,
-          user_id: userId,
-          role: "editor",
-          is_shared_with_me: true,
-        },
-        { onConflict: "board_id,user_id", ignoreDuplicates: true },
-      );
-  }
+		// Upsert — if already member, this is a no-op
+		await client.from("board_members").upsert(
+			{
+				board_id: board.id,
+				user_id: userId,
+				role: "editor",
+				is_shared_with_me: true,
+			},
+			{ onConflict: "board_id,user_id", ignoreDuplicates: true },
+		);
+	}
 
-  return json(res, 200, { boardId: board.id, boardTitle: board.title });
+	return json(res, 200, { boardId: board.id, boardTitle: board.title });
 }
 
 function getSupabaseClient() {
-  if (!supabase) {
-    throw new HttpError(503, "Supabase is not configured. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to .env.");
-  }
+	if (!supabase) {
+		throw new HttpError(503, "Supabase is not configured. Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY to .env.");
+	}
 
-  return supabase;
+	return supabase;
 }
 
 function userFacingDatabaseError(message) {
-  if (/relation .* does not exist/i.test(message)) {
-    return "Database tables are missing. Run the Supabase migration first.";
-  }
+	if (/relation .* does not exist/i.test(message)) {
+		return "Database tables are missing. Run the Supabase migration first.";
+	}
 
-  return message || "Database request failed";
+	return message || "Database request failed";
 }
 
 function getSessionUserId(req) {
-  const cookies = parseCookies(req.headers.cookie || "");
-  const token = cookies[SESSION_COOKIE_NAME];
-  if (!token) {
-    return null;
-  }
+	const cookies = parseCookies(req.headers.cookie || "");
+	const token = cookies[SESSION_COOKIE_NAME];
+	if (!token) {
+		return null;
+	}
 
-  return verifySessionToken(token);
+	return verifySessionToken(token);
 }
 
 function signSessionToken(userId) {
-  if (!process.env.AUTH_SECRET) {
-    throw new HttpError(503, "AUTH_SECRET is required for session cookies");
-  }
+	if (!process.env.AUTH_SECRET) {
+		throw new HttpError(503, "AUTH_SECRET is required for session cookies");
+	}
 
-  const payload = {
-    uid: userId,
-    exp: Date.now() + SESSION_MAX_AGE_SECONDS * 1000,
-  };
+	const payload = {
+		uid: userId,
+		exp: Date.now() + SESSION_MAX_AGE_SECONDS * 1000,
+	};
 
-  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const signature = createHmac("sha256", process.env.AUTH_SECRET).update(encodedPayload).digest("base64url");
-  return `${encodedPayload}.${signature}`;
+	const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
+	const signature = createHmac("sha256", process.env.AUTH_SECRET).update(encodedPayload).digest("base64url");
+	return `${encodedPayload}.${signature}`;
 }
 
 function verifySessionToken(token) {
-  if (!process.env.AUTH_SECRET) {
-    return null;
-  }
+	if (!process.env.AUTH_SECRET) {
+		return null;
+	}
 
-  const [encodedPayload, signature] = token.split(".");
-  if (!encodedPayload || !signature) {
-    return null;
-  }
+	const [encodedPayload, signature] = token.split(".");
+	if (!encodedPayload || !signature) {
+		return null;
+	}
 
-  const expected = createHmac("sha256", process.env.AUTH_SECRET).update(encodedPayload).digest();
-  const received = Buffer.from(signature, "base64url");
-  if (expected.length !== received.length || !timingSafeEqual(expected, received)) {
-    return null;
-  }
+	const expected = createHmac("sha256", process.env.AUTH_SECRET).update(encodedPayload).digest();
+	const received = Buffer.from(signature, "base64url");
+	if (expected.length !== received.length || !timingSafeEqual(expected, received)) {
+		return null;
+	}
 
-  const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
-  if (typeof payload?.uid !== "string" || typeof payload?.exp !== "number" || payload.exp < Date.now()) {
-    return null;
-  }
+	const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
+	if (typeof payload?.uid !== "string" || typeof payload?.exp !== "number" || payload.exp < Date.now()) {
+		return null;
+	}
 
-  return payload.uid;
+	return payload.uid;
 }
 
 function buildSessionCookie(token) {
-  const parts = [
-    `${SESSION_COOKIE_NAME}=${token}`,
-    "Path=/",
-    "HttpOnly",
-    "SameSite=Lax",
-    `Max-Age=${SESSION_MAX_AGE_SECONDS}`,
-  ];
+	const parts = [`${SESSION_COOKIE_NAME}=${token}`, "Path=/", "HttpOnly", "SameSite=Lax", `Max-Age=${SESSION_MAX_AGE_SECONDS}`];
 
-  if (isProd) {
-    parts.push("Secure");
-  }
+	if (isProd) {
+		parts.push("Secure");
+	}
 
-  return parts.join("; ");
+	return parts.join("; ");
 }
 
 function buildClearedSessionCookie() {
-  const parts = [`${SESSION_COOKIE_NAME}=`, "Path=/", "HttpOnly", "SameSite=Lax", "Max-Age=0"];
-  if (isProd) {
-    parts.push("Secure");
-  }
+	const parts = [`${SESSION_COOKIE_NAME}=`, "Path=/", "HttpOnly", "SameSite=Lax", "Max-Age=0"];
+	if (isProd) {
+		parts.push("Secure");
+	}
 
-  return parts.join("; ");
+	return parts.join("; ");
 }
 
 function appendSetCookie(res, value) {
-  const existing = res.getHeader("Set-Cookie");
-  if (!existing) {
-    res.setHeader("Set-Cookie", value);
-    return;
-  }
+	const existing = res.getHeader("Set-Cookie");
+	if (!existing) {
+		res.setHeader("Set-Cookie", value);
+		return;
+	}
 
-  if (Array.isArray(existing)) {
-    res.setHeader("Set-Cookie", [...existing, value]);
-    return;
-  }
+	if (Array.isArray(existing)) {
+		res.setHeader("Set-Cookie", [...existing, value]);
+		return;
+	}
 
-  res.setHeader("Set-Cookie", [existing, value]);
+	res.setHeader("Set-Cookie", [existing, value]);
 }
 
 function parseCookies(rawCookie) {
-  const result = {};
-  for (const part of rawCookie.split(";")) {
-    const segment = part.trim();
-    if (!segment) continue;
+	const result = {};
+	for (const part of rawCookie.split(";")) {
+		const segment = part.trim();
+		if (!segment) continue;
 
-    const separatorIndex = segment.indexOf("=");
-    if (separatorIndex <= 0) continue;
+		const separatorIndex = segment.indexOf("=");
+		if (separatorIndex <= 0) continue;
 
-    const key = segment.slice(0, separatorIndex).trim();
-    const value = segment.slice(separatorIndex + 1).trim();
-    result[key] = value;
-  }
+		const key = segment.slice(0, separatorIndex).trim();
+		const value = segment.slice(separatorIndex + 1).trim();
+		result[key] = value;
+	}
 
-  return result;
+	return result;
 }
 
 async function serveStatic(pathname, res) {
-  const normalizedPath = pathname === "/" ? "/index.html" : pathname;
-  const filePath = path.join(
-    normalizedPath.startsWith("/assets/")
-      ? distDir
-      : normalizedPath.startsWith("/favicon") || normalizedPath.startsWith("/og-image")
-        ? publicDir
-        : distDir,
-    normalizedPath.replace(/^\/+/, ""),
-  );
+	const normalizedPath = pathname === "/" ? "/index.html" : pathname;
+	const filePath = path.join(
+		normalizedPath.startsWith("/assets/") ? distDir : normalizedPath.startsWith("/favicon") || normalizedPath.startsWith("/og-image") ? publicDir : distDir,
+		normalizedPath.replace(/^\/+/, ""),
+	);
 
-  try {
-    const file = await fs.readFile(filePath);
-    res.writeHead(200, { "Content-Type": contentType(filePath) });
-    res.end(file);
-  } catch {
-    const indexHtml = await fs.readFile(path.join(distDir, "index.html"));
-    res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
-    res.end(indexHtml);
-  }
+	try {
+		const file = await fs.readFile(filePath);
+		res.writeHead(200, { "Content-Type": contentType(filePath) });
+		res.end(file);
+	} catch {
+		const indexHtml = await fs.readFile(path.join(distDir, "index.html"));
+		res.writeHead(200, { "Content-Type": "text/html; charset=utf-8" });
+		res.end(indexHtml);
+	}
 }
 
 function loadEnvFile(filePath) {
-  try {
-    const raw = fsSync.readFileSync(filePath, "utf8");
-    for (const line of raw.split(/\r?\n/)) {
-      const match = line.match(/^(?!#)\s*([^=]+)=["']?(.*?)["']?\s*$/);
-      if (!match) continue;
-      const [, key, value] = match;
-      if (!(key in process.env)) {
-        process.env[key.trim()] = value;
-      }
-    }
-  } catch {
-  }
+	try {
+		const raw = fsSync.readFileSync(filePath, "utf8");
+		for (const line of raw.split(/\r?\n/)) {
+			const match = line.match(/^(?!#)\s*([^=]+)=["']?(.*?)["']?\s*$/);
+			if (!match) continue;
+			const [, key, value] = match;
+			if (!(key in process.env)) {
+				process.env[key.trim()] = value;
+			}
+		}
+	} catch {}
 }
 
 async function readFormData(req) {
@@ -1381,23 +1458,23 @@ async function readFormData(req) {
 }
 
 function readJson(req) {
-  return new Promise((resolve, reject) => {
-    let body = "";
-    req.on("data", (chunk) => {
-      body += chunk;
-      if (body.length > 1024 * 1024) {
-        reject(new Error("Request body too large"));
-      }
-    });
-    req.on("end", () => {
-      try {
-        resolve(body ? JSON.parse(body) : {});
-      } catch (error) {
-        reject(error);
-      }
-    });
-    req.on("error", reject);
-  });
+	return new Promise((resolve, reject) => {
+		let body = "";
+		req.on("data", (chunk) => {
+			body += chunk;
+			if (body.length > 1024 * 1024) {
+				reject(new Error("Request body too large"));
+			}
+		});
+		req.on("end", () => {
+			try {
+				resolve(body ? JSON.parse(body) : {});
+			} catch (error) {
+				reject(error);
+			}
+		});
+		req.on("error", reject);
+	});
 }
 
 function safeFileExtension(file) {
@@ -1424,57 +1501,57 @@ function safeFileExtension(file) {
 }
 
 function normalizeEmail(value) {
-  if (typeof value !== "string") return "";
-  const email = value.trim().toLowerCase();
-  return /^\S+@\S+\.\S+$/.test(email) ? email : "";
+	if (typeof value !== "string") return "";
+	const email = value.trim().toLowerCase();
+	return /^\S+@\S+\.\S+$/.test(email) ? email : "";
 }
 
 function signMagicToken(email) {
-  const payload = {
-    email,
-    exp: Date.now() + 1000 * 60 * 15,
-  };
-  const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
-  const signature = createHmac("sha256", process.env.AUTH_SECRET).update(encodedPayload).digest("base64url");
-  return `${encodedPayload}.${signature}`;
+	const payload = {
+		email,
+		exp: Date.now() + 1000 * 60 * 15,
+	};
+	const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
+	const signature = createHmac("sha256", process.env.AUTH_SECRET).update(encodedPayload).digest("base64url");
+	return `${encodedPayload}.${signature}`;
 }
 
 function verifyMagicToken(token) {
-  if (!process.env.AUTH_SECRET) return null;
+	if (!process.env.AUTH_SECRET) return null;
 
-  const [encodedPayload, signature] = token.split(".");
-  if (!encodedPayload || !signature) return null;
+	const [encodedPayload, signature] = token.split(".");
+	if (!encodedPayload || !signature) return null;
 
-  const expected = createHmac("sha256", process.env.AUTH_SECRET).update(encodedPayload).digest();
-  const received = Buffer.from(signature, "base64url");
-  if (expected.length !== received.length || !timingSafeEqual(expected, received)) {
-    return null;
-  }
+	const expected = createHmac("sha256", process.env.AUTH_SECRET).update(encodedPayload).digest();
+	const received = Buffer.from(signature, "base64url");
+	if (expected.length !== received.length || !timingSafeEqual(expected, received)) {
+		return null;
+	}
 
-  const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
-  if (typeof payload?.email !== "string" || typeof payload?.exp !== "number" || payload.exp < Date.now()) {
-    return null;
-  }
+	const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
+	if (typeof payload?.email !== "string" || typeof payload?.exp !== "number" || payload.exp < Date.now()) {
+		return null;
+	}
 
-  return normalizeEmail(payload.email);
+	return normalizeEmail(payload.email);
 }
 
 function escapeHtml(value) {
-  return String(value)
-    .replaceAll("&", "&amp;")
-    .replaceAll("<", "&lt;")
-    .replaceAll(">", "&gt;")
-    .replaceAll('"', "&quot;")
-    .replaceAll("'", "&#39;");
+	return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
 }
 
 function buildMagicLinkEmail({ url, host, email }) {
-  const safeUrl = escapeHtml(url);
-  const safeHost = escapeHtml(host);
-  const safeEmail = escapeHtml(email);
-  const year = new Date().getFullYear();
+	const safeUrl = escapeHtml(url);
+	const safeHost = escapeHtml(host);
+	const safeEmail = escapeHtml(email);
+	const year = new Date().getFullYear();
 
-  const html = `<!DOCTYPE html>
+	const logoUrl = `https://${safeHost}/logo-email.png`;
+	const logoMarkup = `<a href="https://${safeHost}" target="_blank" style="text-decoration: none; display: inline-block;">
+          <img src="${logoUrl}" alt="Sketchmind" width="52" height="52" style="display: block; width: 52px; height: 52px; margin: 0 auto 12px; border: 0; border-radius: 14px; box-shadow: 0 0 0 1px rgba(102, 223, 255, 0.3), 0 8px 26px rgba(102, 223, 255, 0.35);" />
+        </a>`;
+
+	const html = `<!DOCTYPE html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
@@ -1487,10 +1564,10 @@ function buildMagicLinkEmail({ url, host, email }) {
     </div>
     <div style="margin: 0 auto; max-width: 560px;">
       <div style="margin-bottom: 24px; text-align: center;">
-        <a href="https://${safeHost}" target="_blank" style="text-decoration: none; display: inline-block;">
-          <div style="margin: 0 auto 12px; width: 52px; height: 52px; border-radius: 14px; background: linear-gradient(135deg, #66dfff, #7aa2ff); box-shadow: 0 0 0 1px rgba(102, 223, 255, 0.3), 0 8px 26px rgba(102, 223, 255, 0.35); color: #0a1c2a; font-size: 24px; line-height: 52px; font-weight: 700;">S</div>
-        </a>
-        <div style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; color: #ecf3fb;">Sketchmind</div>
+        ${logoMarkup}
+        <div style="margin: 0; font-size: 20px; font-weight: 700; letter-spacing: -0.01em; color: #ecf3fb;">
+          Sketch<span style="color: #66dfff;">mind</span>
+        </div>
       </div>
 
       <div style="background: linear-gradient(160deg, #111a23, #0d161f); border: 1px solid #263342; border-radius: 16px; padding: 36px 32px; box-shadow: 0 0 0 1px rgba(102, 223, 255, 0.12), 0 18px 42px -24px rgba(0, 0, 0, 0.9);">
@@ -1517,7 +1594,7 @@ function buildMagicLinkEmail({ url, host, email }) {
   </body>
 </html>`;
 
-  const text = `Sign in to Sketchmind
+	const text = `Sign in to Sketchmind
 --------------------
 
 Click the link below to sign in. No password needed.
@@ -1528,31 +1605,31 @@ This link expires in 15 minutes and can only be used once.
 
 If you did not request this, ignore this email.`;
 
-  return { html, text };
+	return { html, text };
 }
 
 function trimTrailingSlash(value) {
-  return value.replace(/\/+$/, "");
+	return value.replace(/\/+$/, "");
 }
 
 function contentType(filePath) {
-  if (filePath.endsWith(".js")) return "application/javascript; charset=utf-8";
-  if (filePath.endsWith(".css")) return "text/css; charset=utf-8";
-  if (filePath.endsWith(".svg")) return "image/svg+xml";
-  if (filePath.endsWith(".png")) return "image/png";
-  if (filePath.endsWith(".ico")) return "image/x-icon";
-  if (filePath.endsWith(".html")) return "text/html; charset=utf-8";
-  return "application/octet-stream";
+	if (filePath.endsWith(".js")) return "application/javascript; charset=utf-8";
+	if (filePath.endsWith(".css")) return "text/css; charset=utf-8";
+	if (filePath.endsWith(".svg")) return "image/svg+xml";
+	if (filePath.endsWith(".png")) return "image/png";
+	if (filePath.endsWith(".ico")) return "image/x-icon";
+	if (filePath.endsWith(".html")) return "text/html; charset=utf-8";
+	return "application/octet-stream";
 }
 
 function json(res, statusCode, payload) {
-  res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
-  res.end(JSON.stringify(payload));
+	res.writeHead(statusCode, { "Content-Type": "application/json; charset=utf-8" });
+	res.end(JSON.stringify(payload));
 }
 
 class HttpError extends Error {
-  constructor(statusCode, message) {
-    super(message);
-    this.statusCode = statusCode;
-  }
+	constructor(statusCode, message) {
+		super(message);
+		this.statusCode = statusCode;
+	}
 }

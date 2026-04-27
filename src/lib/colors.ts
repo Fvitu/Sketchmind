@@ -16,7 +16,9 @@ function hashToInteger(id: string) {
 
 export function getUserColor(userId: number | string) {
 	const hash = Math.abs(hashToInteger(String(userId)));
-	const hue = (hash % 37) * 10;
+	// Use a prime multiplier (13) to spread sequential IDs (like connectionId 1, 2, 3)
+	// across the 37 possible hues (0, 10, ... 360) in the Excalidraw-style palette.
+	const hue = ((hash * 13) % 37) * 10;
 	// Excalidraw hardcodes saturation to 100% and lightness to 83%
 	return `hsl(${hue}, 100%, 83%)`;
 }

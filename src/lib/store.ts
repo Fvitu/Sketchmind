@@ -217,6 +217,29 @@ export const auth = {
 		setAuthSnapshot({ user: payload.user });
 		return payload.user;
 	},
+	async uploadAvatar(file: File) {
+		const formData = new FormData();
+		formData.append("file", file);
+
+		const payload = await api<{ user: User; url: string }>(
+			"/api/profile/avatar",
+			{
+				method: "POST",
+				body: formData,
+			},
+			"Couldn't upload avatar",
+		);
+
+		const user = { ...payload.user };
+		if (user.avatar_url) {
+			// Append cache buster to ensure the UI refreshes if the URL is the same
+			const base = user.avatar_url.split("?")[0];
+			user.avatar_url = `${base}?t=${Date.now()}`;
+		}
+
+		setAuthSnapshot({ user });
+		return user;
+	},
 	async signOut() {
 		await api<{ ok: boolean }>(
 			"/api/auth/sign-out",

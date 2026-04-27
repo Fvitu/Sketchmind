@@ -1,4 +1,5 @@
 import { createElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Excalidraw, restore } from "@excalidraw/excalidraw";
 import { HexAlphaColorPicker, HexColorInput } from "react-colorful";
 import { renderToStaticMarkup } from "react-dom/server";
@@ -366,6 +367,27 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 	const gridEnabledRef = useRef(false);
 	const selectedBackgroundColorRef = useRef(DEFAULT_BACKGROUND_COLOR);
 	const pendingSceneColorRef = useRef<string | null>(null);
+	const [mobileMiscToolsEl, setMobileMiscToolsEl] = useState<HTMLElement | null>(null);
+
+	useEffect(() => {
+		const container = containerRef.current;
+		if (!container || !isSmallScreen) {
+			setMobileMiscToolsEl(null);
+			return;
+		}
+
+		const syncEl = () => {
+			const el = container.querySelector<HTMLElement>(".mobile-misc-tools-container");
+			if (el && el !== mobileMiscToolsEl) {
+				setMobileMiscToolsEl(el);
+			}
+		};
+
+		syncEl();
+		const observer = new MutationObserver(syncEl);
+		observer.observe(container, { childList: true, subtree: true });
+		return () => observer.disconnect();
+	}, [isSmallScreen]);
 
 	const initialData = useMemo<ExcalidrawInitialDataState>(() => {
 		if (initialCanvasData) {
@@ -663,9 +685,12 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 			return;
 		}
 
-		const nextGridMode = !gridEnabledRef.current;
+		const currentGridMode = api.getAppState().gridModeEnabled;
+		const nextGridMode = !currentGridMode;
+
 		gridEnabledRef.current = nextGridMode;
 		setIsGridEnabled(nextGridMode);
+		
 		api.updateScene({
 			appState: {
 				gridModeEnabled: nextGridMode,
@@ -722,7 +747,22 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 			gridButton.setAttribute("aria-pressed", String(isActive));
 		};
 
+		const syncMobileToolbarLayout = () => {
+			const topToolbarStack = container.querySelector<HTMLElement>(".App-menu_top .App-toolbar:not(.App-toolbar--mobile) > .Stack");
+			const miscTools = container.querySelector<HTMLElement>(".mobile-misc-tools-container");
+
+			if (topToolbarStack && miscTools) {
+				const buttons = Array.from(miscTools.querySelectorAll<HTMLElement>(".ToolIcon"));
+				buttons.forEach((btn) => {
+					if (!topToolbarStack.contains(btn)) {
+						topToolbarStack.appendChild(btn);
+					}
+				});
+			}
+		};
+
 		syncMobileGridToggle();
+		syncMobileToolbarLayout();
 
 		const observer = new MutationObserver(() => {
 			if (rafId !== null) {
@@ -731,6 +771,7 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 
 			rafId = requestAnimationFrame(() => {
 				syncMobileGridToggle();
+				syncMobileToolbarLayout();
 				rafId = null;
 			});
 		});
@@ -746,7 +787,129 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 			const gridButton = container.querySelector<HTMLButtonElement>(`button[${MOBILE_GRID_TOGGLE_ATTRIBUTE}="true"]`);
 			gridButton?.removeEventListener("click", handleToggleNativeGrid);
 		};
-	}, [handleToggleNativeGrid, isGridEnabled, isSmallScreen]);
+	}, [handleToggleNativeGrid, isSmallScreen]);
+
+	const renderBackgroundColorPicker = (isMobile = false) => {
+		const selectedSwatch = normalizeColorInputValue(selectedBackgroundColor);
+
+		const content = (
+			<div
+				className={cn(
+					"flex gap-2 p-2 shadow-xl backdrop-blur-xl",
+					isMobile
+						? "flex-col items-center rounded-[1.15rem] border border-primary/15 bg-[linear-gradient(180deg,hsl(213_28%_11%_/_0.94),hsl(213_30%_8%_/_0.96))]"
+						: "flex-col rounded-[1.15rem] border border-primary/15 bg-[linear-gradient(180deg,hsl(213_28%_11%_/_0.94),hsl(213_30%_8%_/_0.96))]",
+				)}>
+				{BACKGROUND_SWATCHES.map((color) => (
+					<button
+						key={color}
+						type="button"
+						title={`Set background ${color}`}
+						aria-label={`Set background ${color}`}
+						disabled={!canEdit}
+						onClick={() => handleBackgroundColorChange(color)}
+						className={cn(
+							"relative h-8 w-8 rounded-full border border-white/10 transition duration-200 ease-out",
+							!canEdit && "cursor-not-allowed opacity-60",
+							canEdit && "cursor-pointer hover:scale-[1.18] hover:-rotate-12 active:scale-[0.85] active:rotate-[8deg]",
+							selectedSwatch === normalizeColorInputValue(color)
+								? "border-primary shadow-[0_0_0_1px_hsl(var(--border)_/_0.95),0_10px_18px_-14px_hsl(0_0%_0%_/_0.55)]"
+								: "border-border/70",
+						)}
+						style={{ backgroundColor: color }}>
+						{selectedSwatch === normalizeColorInputValue(color) && (
+							<span className="absolute inset-0 grid place-items-center rounded-full bg-black/12">
+								<Check className="h-3.5 w-3.5 text-white" />
+							</span>
+						)}
+					</button>
+				))}
+				<Popover open={isColorPickerOpen} onOpenChange={setIsColorPickerOpen}>
+					<PopoverTrigger asChild>
+						<button
+							type="button"
+							title="Pick custom background color"
+							aria-label="Pick custom background color"
+							disabled={!canEdit}
+							className={cn(
+								"relative grid h-8 w-8 place-items-center overflow-hidden rounded-full border border-white/10 bg-[conic-gradient(from_90deg,#7dd3fc,#38bdf8,#0ea5e9,#0284c7,#0369a1,#7dd3fc)] text-white shadow-[inset_0_0_0_1px_hsl(0_0%_100%_/_0.15)] transition duration-200 ease-out",
+								!canEdit && "cursor-not-allowed opacity-60",
+								canEdit && "cursor-pointer hover:scale-[1.18] hover:-rotate-12 active:scale-[0.85] active:rotate-[8deg]",
+							)}>
+							<span
+								aria-hidden="true"
+								className="absolute inset-[3px] rounded-full border border-white/15"
+								style={{ backgroundColor: selectedBackgroundColor }}
+							/>
+							<Palette className="relative h-3.5 w-3.5 drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)]" />
+						</button>
+					</PopoverTrigger>
+					<PopoverContent
+						side={isMobile ? "top" : "left"}
+						align="center"
+						sideOffset={16}
+						className="w-[280px] rounded-[1.25rem] border-primary/15 bg-[linear-gradient(180deg,hsl(213_28%_11%_/_0.98),hsl(213_30%_8%_/_0.98))] p-0 text-foreground shadow-[0_24px_80px_-28px_hsl(0_0%_0%_/_0.58),inset_0_1px_0_hsl(0_0%_100%_/_0.07)] backdrop-blur-xl">
+						<div className="space-y-4 p-4">
+							<div className="flex items-center justify-between gap-3">
+								<div>
+									<p className="text-sm font-semibold text-foreground">Canvas background</p>
+									<p className="text-xs text-muted-foreground">Hue, saturation, hex, and alpha.</p>
+								</div>
+								<div className="rounded-full border border-white/10 bg-background/60 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-primary">
+									Custom
+								</div>
+							</div>
+
+							<div className="rounded-[1rem] border border-white/8 bg-background/35 p-3 shadow-[inset_0_1px_0_hsl(0_0%_100%_/_0.04)]">
+								<HexAlphaColorPicker color={colorInputValue} onChange={handleBackgroundColorChange} className="sketchmind-color-picker w-full" />
+							</div>
+
+							<div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
+								<label className="space-y-1.5">
+									<span className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Hex + Alpha</span>
+									<HexColorInput
+										color={colorInputValue}
+										onChange={handleBackgroundColorChange}
+										prefixed
+										alpha
+										className="flex h-10 w-full rounded-xl border border-white/10 bg-background/80 px-3 py-2 text-sm font-medium text-foreground outline-none transition focus:border-white/20 focus:ring-2 focus:ring-white/15"
+									/>
+								</label>
+
+								<Button
+									type="button"
+									variant="outline"
+									className="h-10 rounded-xl border-white/10 bg-background/65 px-3 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
+									onClick={() => handleBackgroundColorChange(DEFAULT_BACKGROUND_COLOR)}>
+									Reset
+								</Button>
+							</div>
+						</div>
+					</PopoverContent>
+				</Popover>
+			</div>
+		);
+
+		if (isMobile) {
+			return (
+				<Popover>
+					<PopoverTrigger asChild>
+						<button
+							type="button"
+							className="ToolIcon Shape ToolIcon__icon"
+							title="Change Background Color">
+							<Palette size={18} />
+						</button>
+					</PopoverTrigger>
+					<PopoverContent side="bottom" align="center" sideOffset={8} className="p-1 border-none bg-transparent shadow-none w-auto z-[1000]">
+						{content}
+					</PopoverContent>
+				</Popover>
+			);
+		}
+
+		return content;
+	};
 
 	return (
 		<div ref={containerRef} className="sketchmind-canvas relative h-full w-full">
@@ -760,101 +923,12 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 					.sketchmind-canvas .layer-ui__wrapper .UserList__wrapper { display: none !important; }
 				`}
 			</style>
-			<div className="absolute right-3 top-1/2 z-20 -translate-y-1/2 sm:right-4">
-				<div className="flex flex-col gap-2 rounded-[1.15rem] border border-primary/15 bg-[linear-gradient(180deg,hsl(213_28%_11%_/_0.94),hsl(213_30%_8%_/_0.96))] p-2 shadow-[0_18px_48px_-24px_hsl(0_0%_0%_/_0.5),inset_0_1px_0_hsl(0_0%_100%_/_0.06)] backdrop-blur-xl">
-					{BACKGROUND_SWATCHES.map((color) => (
-						<button
-							key={color}
-							type="button"
-							title={`Set background ${color}`}
-							aria-label={`Set background ${color}`}
-							disabled={!canEdit}
-							onClick={() => handleBackgroundColorChange(color)}
-							className={cn(
-								"relative h-8 w-8 rounded-full border border-white/10 transition duration-200 ease-out",
-								!canEdit && "cursor-not-allowed opacity-60",
-								canEdit && "cursor-pointer hover:scale-[1.18] hover:-rotate-12 active:scale-[0.85] active:rotate-[8deg]",
-								selectedSwatch === normalizeColorInputValue(color)
-									? "border-primary shadow-[0_0_0_1px_hsl(var(--border)_/_0.95),0_10px_18px_-14px_hsl(0_0%_0%_/_0.55)]"
-									: "border-border/70",
-							)}
-							style={{ backgroundColor: color }}>
-							{selectedSwatch === normalizeColorInputValue(color) && (
-								<span className="absolute inset-0 grid place-items-center rounded-full bg-black/12">
-									<Check className="h-3.5 w-3.5 text-white" />
-								</span>
-							)}
-						</button>
-					))}
-					<Popover open={isColorPickerOpen} onOpenChange={setIsColorPickerOpen}>
-						<PopoverTrigger asChild>
-							<button
-								type="button"
-								title="Pick custom background color"
-								aria-label="Pick custom background color"
-								disabled={!canEdit}
-								className={cn(
-									"relative grid h-8 w-8 place-items-center overflow-hidden rounded-full border border-white/10 bg-[conic-gradient(from_90deg,#7dd3fc,#38bdf8,#0ea5e9,#0284c7,#0369a1,#7dd3fc)] text-white shadow-[inset_0_0_0_1px_hsl(0_0%_100%_/_0.15)] transition duration-200 ease-out",
-									!canEdit && "cursor-not-allowed opacity-60",
-									canEdit && "cursor-pointer hover:scale-[1.18] hover:-rotate-12 active:scale-[0.85] active:rotate-[8deg]",
-								)}>
-								<span
-									aria-hidden="true"
-									className="absolute inset-[3px] rounded-full border border-white/15"
-									style={{ backgroundColor: selectedBackgroundColor }}
-								/>
-								<Palette className="relative h-3.5 w-3.5 drop-shadow-[0_1px_3px_rgba(0,0,0,0.45)]" />
-							</button>
-						</PopoverTrigger>
-						<PopoverContent
-							side="left"
-							align="center"
-							sideOffset={16}
-							className="w-[280px] rounded-[1.25rem] border-primary/15 bg-[linear-gradient(180deg,hsl(213_28%_11%_/_0.98),hsl(213_30%_8%_/_0.98))] p-0 text-foreground shadow-[0_24px_80px_-28px_hsl(0_0%_0%_/_0.58),inset_0_1px_0_hsl(0_0%_100%_/_0.07)] backdrop-blur-xl">
-							<div className="space-y-4 p-4">
-								<div className="flex items-center justify-between gap-3">
-									<div>
-										<p className="text-sm font-semibold text-foreground">Canvas background</p>
-										<p className="text-xs text-muted-foreground">Hue, saturation, hex, and alpha.</p>
-									</div>
-									<div className="rounded-full border border-white/10 bg-background/60 px-2.5 py-1 text-[11px] font-medium uppercase tracking-[0.18em] text-primary">
-										Custom
-									</div>
-								</div>
-
-								<div className="rounded-[1rem] border border-white/8 bg-background/35 p-3 shadow-[inset_0_1px_0_hsl(0_0%_100%_/_0.04)]">
-									<HexAlphaColorPicker
-										color={colorInputValue}
-										onChange={handleBackgroundColorChange}
-										className="sketchmind-color-picker w-full"
-									/>
-								</div>
-
-								<div className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3">
-									<label className="space-y-1.5">
-										<span className="text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">Hex + Alpha</span>
-										<HexColorInput
-											color={colorInputValue}
-											onChange={handleBackgroundColorChange}
-											prefixed
-											alpha
-											className="flex h-10 w-full rounded-xl border border-white/10 bg-background/80 px-3 py-2 text-sm font-medium text-foreground outline-none transition focus:border-white/20 focus:ring-2 focus:ring-white/15"
-										/>
-									</label>
-
-									<Button
-										type="button"
-										variant="outline"
-										className="h-10 rounded-xl border-white/10 bg-background/65 px-3 text-xs font-medium text-muted-foreground hover:bg-accent hover:text-foreground"
-										onClick={() => handleBackgroundColorChange(DEFAULT_BACKGROUND_COLOR)}>
-										Reset
-									</Button>
-								</div>
-							</div>
-						</PopoverContent>
-					</Popover>
+			{!isSmallScreen && (
+				<div className="absolute right-3 top-1/2 z-20 -translate-y-1/2 sm:right-4">
+					{renderBackgroundColorPicker(false)}
 				</div>
-			</div>
+			)}
+			{isSmallScreen && mobileMiscToolsEl && createPortal(renderBackgroundColorPicker(true), mobileMiscToolsEl)}
 
 			<Excalidraw
 				excalidrawAPI={handleAPIReady}
@@ -862,32 +936,36 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 				onChange={handleSceneChange}
 				theme={EXCALIDRAW_THEME}
 				viewModeEnabled={!canEdit}
-				renderTopRightUI={useCallback((_isMobile: boolean, appState: AppState) =>
-					isSmallScreen ? null : (
-						<button
-							type="button"
-							className={cn(
-								"p-2 rounded-md transition-colors",
-								appState.gridModeEnabled ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground",
-							)}
-							onClick={handleToggleNativeGrid}
-							title="Toggle Grid Overlay">
-							<Grid3X3 className="h-4 w-4" />
-						</button>
-					)
-				, [isSmallScreen, handleToggleNativeGrid])}
+				renderTopRightUI={useCallback(
+					(_isMobile: boolean, appState: AppState) =>
+						isSmallScreen ? null : (
+							<button
+								type="button"
+								className={cn(
+									"p-2 rounded-md transition-colors",
+									appState.gridModeEnabled ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground",
+								)}
+								onClick={handleToggleNativeGrid}
+								title="Toggle Grid Overlay">
+								<Grid3X3 className="h-4 w-4" />
+							</button>
+						),
+					[isSmallScreen, handleToggleNativeGrid],
+				)}
 				UIOptions={EXCALIDRAW_UI_OPTIONS}
 			/>
 
-			{/* Bottom-center hint bar that mirrors Excalidraw hints */}
-			<div
-				aria-hidden={!hintText || isSmallScreen}
-				className={cn(
-					"pointer-events-none absolute left-1/2 bottom-6 z-50 -translate-x-1/2 rounded-xl px-4 py-2 text-sm text-muted-foreground transition-opacity",
-					!hintText || isSmallScreen ? "opacity-0" : "opacity-100",
-				)}>
-				<div className="pointer-events-auto rounded-xl bg-background/70 px-3 py-1 shadow-md backdrop-blur">{hintText}</div>
-			</div>
+			{/* Bottom-center hint bar that mirrors Excalidraw hints - Hidden on mobile to avoid blocking interactions */}
+			{!isSmallScreen && hintText && (
+				<div
+					aria-hidden="true"
+					className="pointer-events-none absolute left-1/2 bottom-6 z-50 -translate-x-1/2 rounded-xl px-4 py-2 text-sm text-muted-foreground transition-opacity opacity-100"
+				>
+					<div className="pointer-events-auto rounded-xl bg-background/70 px-3 py-1 shadow-md backdrop-blur">
+						{hintText}
+					</div>
+				</div>
+			)}
 		</div>
 	);
 }

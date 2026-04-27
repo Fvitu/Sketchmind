@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { exportToBlob } from "@excalidraw/excalidraw";
 import type { AppState, BinaryFiles, ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
 import type { ExcalidrawElement } from "@excalidraw/excalidraw/element/types";
@@ -25,6 +25,15 @@ export function BoardCanvas({
   role,
   onShared,
 }: BoardCanvasProps) {
+  useEffect(() => {
+    // Prevent scrolling on the body while the board is active
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, []);
+
   const [currentBoardName, setCurrentBoardName] = useState(boardName);
   const [isExporting, setIsExporting] = useState(false);
   const excalidrawAPIRef = useRef<ExcalidrawImperativeAPI | null>(null);
@@ -92,7 +101,7 @@ export function BoardCanvas({
   }, [currentBoardName, isExporting, theme]);
 
   return (
-    <div className="fixed inset-0 flex flex-col bg-background">
+    <div id="sketchmind-canvas-wrapper" className="fixed inset-0 flex flex-col bg-background">
       <BoardHeader
         boardId={boardId}
         boardName={currentBoardName}
