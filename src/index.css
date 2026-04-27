@@ -95,10 +95,20 @@
     @apply h-full;
   }
 
+  html {
+    overflow-x: clip;
+    scrollbar-gutter: stable;
+  }
+
   body {
     @apply bg-background text-foreground antialiased;
+    overflow-x: clip;
     font-family: 'Inter', ui-sans-serif, system-ui, sans-serif;
     font-feature-settings: 'cv02', 'cv03', 'cv04', 'cv11';
+  }
+
+  #root {
+    overflow-x: clip;
   }
 
   .font-hand {
@@ -2360,7 +2370,7 @@
 }
 
 @media (max-width: 639px) {
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile {
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile {
     background: var(--sketchmind-toolbar-bg) !important;
     border: 1px solid var(--sketchmind-toolbar-border) !important;
     border-radius: 1.15rem !important;
@@ -2369,18 +2379,18 @@
     padding: 8px !important;
   }
 
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile > .Stack.Stack_horizontal {
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile>.Stack.Stack_horizontal {
     gap: 8px !important;
   }
 
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .excalidraw-button,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .icon-button,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .picker-type-button,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .sidebar-trigger,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .default-sidebar-trigger,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile button.standalone {
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .excalidraw-button,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .icon-button,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .picker-type-button,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .sidebar-trigger,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .default-sidebar-trigger,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile button.standalone {
     background-color: var(--sketchmind-control-bg) !important;
     border-color: var(--sketchmind-control-border) !important;
     color: hsl(0 0% 100%) !important;
@@ -2393,14 +2403,14 @@
       border-color 220ms ease !important;
   }
 
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon:hover,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button:hover,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .excalidraw-button:hover,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .icon-button:hover,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .picker-type-button:hover,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .sidebar-trigger:hover,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .default-sidebar-trigger:hover,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile button.standalone:hover {
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon:hover,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button:hover,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .excalidraw-button:hover,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .icon-button:hover,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .picker-type-button:hover,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .sidebar-trigger:hover,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .default-sidebar-trigger:hover,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile button.standalone:hover {
     transform: translateY(-1px) !important;
     background-color: var(--sketchmind-control-hover) !important;
     box-shadow:
@@ -2408,37 +2418,37 @@
       var(--sketchmind-control-shadow) !important;
   }
 
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon:hover svg,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button:hover svg,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .excalidraw-button:hover svg,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .icon-button:hover svg,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .picker-type-button:hover svg,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .sidebar-trigger:hover svg,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .default-sidebar-trigger:hover svg,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile button.standalone:hover svg {
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon:hover svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button:hover svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .excalidraw-button:hover svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .icon-button:hover svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .picker-type-button:hover svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .sidebar-trigger:hover svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .default-sidebar-trigger:hover svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile button.standalone:hover svg {
     transform: scale(1.18) rotate(-12deg) !important;
   }
 
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon:active,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button:active,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .excalidraw-button:active,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .icon-button:active,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .picker-type-button:active,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .sidebar-trigger:active,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .default-sidebar-trigger:active,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile button.standalone:active {
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon:active,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button:active,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .excalidraw-button:active,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .icon-button:active,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .picker-type-button:active,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .sidebar-trigger:active,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .default-sidebar-trigger:active,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile button.standalone:active {
     transform: translateY(0) !important;
     background-color: var(--sketchmind-control-active) !important;
   }
 
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon:active svg,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button:active svg,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .excalidraw-button:active svg,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .icon-button:active svg,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .picker-type-button:active svg,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .sidebar-trigger:active svg,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile .default-sidebar-trigger:active svg,
-  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container > .Island.App-toolbar.App-toolbar--mobile button.standalone:active svg {
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .ToolIcon__icon:active svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .dropdown-menu-button:active svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .excalidraw-button:active svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .icon-button:active svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .picker-type-button:active svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .sidebar-trigger:active svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile .default-sidebar-trigger:active svg,
+  #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile button.standalone:active svg {
     transform: scale(0.85) rotate(8deg) !important;
   }
 }
@@ -2450,6 +2460,7 @@
 
 /* Mobile Responsive Overrides */
 @media (max-width: 1023px) {
+
   /* Fix 1: Main Toolbars - Visible on mobile */
   #sketchmind-canvas-wrapper .excalidraw .App-toolbar--mobile {
     display: flex !important;
@@ -2459,7 +2470,8 @@
   #sketchmind-canvas-wrapper .mobile-misc-tools-container {
     display: flex !important;
     flex-direction: column !important;
-    gap: 18px !important; /* Increased space */
+    gap: 18px !important;
+    /* Increased space */
     padding: 10px !important;
     background: var(--sketchmind-toolbar-bg) !important;
     border: 1px solid var(--sketchmind-toolbar-border) !important;
@@ -2468,16 +2480,18 @@
     backdrop-filter: blur(16px) !important;
     position: fixed !important;
     right: 12px !important;
-    top: 45% !important; /* Slightly above center to avoid clash with bottom items */
+    top: 45% !important;
+    /* Slightly above center to avoid clash with bottom items */
     transform: translateY(-50%) !important;
     z-index: 1000 !important;
     pointer-events: auto !important;
   }
 
   /* Standardize all button types in this container */
-  #sketchmind-canvas-wrapper .mobile-misc-tools-container > label,
-  #sketchmind-canvas-wrapper .mobile-misc-tools-container > button {
-    width: 52px !important; /* Much larger size */
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container>label,
+  #sketchmind-canvas-wrapper .mobile-misc-tools-container>button {
+    width: 52px !important;
+    /* Much larger size */
     height: 52px !important;
     min-width: 52px !important;
     min-height: 52px !important;
@@ -2524,11 +2538,13 @@
 }
 
 @media (max-width: 639px) {
+
   /* Fix 3: Top Bar */
   .sketchmind-topbar .btn-export-label,
   .sketchmind-topbar .btn-share-label {
     display: none !important;
   }
+
   .sketchmind-topbar .btn-export,
   .sketchmind-topbar .btn-share {
     width: 40px !important;
@@ -2536,13 +2552,13 @@
     padding: 0 !important;
     min-width: 40px !important;
   }
-  
+
   /* Top bar layout mobile adaptations */
   .sketchmind-topbar {
     padding: 0 12px !important;
     gap: 8px !important;
   }
-  
+
   .sketchmind-topbar input {
     min-width: 80px !important;
     font-size: 14px !important;
@@ -2556,16 +2572,17 @@
     -ms-overflow-style: none !important;
     max-width: calc(100vw - 32px) !important;
   }
+
   #sketchmind-canvas-wrapper .App-menu_top .App-toolbar::-webkit-scrollbar {
     display: none !important;
   }
-  
+
   #sketchmind-canvas-wrapper .App-menu_top .Stack {
     flex-wrap: nowrap !important;
     display: flex !important;
     gap: 12px !important;
   }
-  
+
   /* Ensure minimum tap targets */
   #sketchmind-canvas-wrapper .ToolIcon__icon,
   #sketchmind-canvas-wrapper .dropdown-menu-button,
@@ -2573,11 +2590,12 @@
     min-width: 48px !important;
     min-height: 48px !important;
   }
-  
+
   /* Fix 4: Bottom Bar */
   #sketchmind-canvas-wrapper .App-menu_bottom {
     position: fixed !important;
-    bottom: 112px !important; /* Above bottom nav pill */
+    bottom: 112px !important;
+    /* Above bottom nav pill */
     left: 50% !important;
     transform: translateX(-50%) !important;
     width: max-content !important;
@@ -2586,7 +2604,7 @@
     background: transparent !important;
     animation: none !important;
   }
-  
+
   /* Container for bottom bar tools */
   #sketchmind-canvas-wrapper .App-menu_bottom .undo-redo-buttons {
     display: flex !important;
@@ -2598,7 +2616,7 @@
     padding: 6px !important;
     gap: 6px !important;
   }
-  
+
   #sketchmind-canvas-wrapper .App-menu_bottom .App-toolbar-content {
     display: flex !important;
     background: rgba(12, 12, 12, 0.85) !important;
@@ -2625,7 +2643,7 @@
     border: 1px solid rgba(255, 255, 255, 0.1) !important;
     color: rgba(255, 255, 255, 0.86) !important;
   }
-  
+
   #sketchmind-canvas-wrapper .App-menu_bottom button:hover {
     background: rgba(255, 255, 255, 0.12) !important;
     transform: scale(1.15) !important;
@@ -2638,7 +2656,7 @@
     opacity: 0.35 !important;
     pointer-events: none !important;
   }
-  
+
   /* Fix 5: Properties Panel (Bottom Sheet) */
   #sketchmind-canvas-wrapper .sidebar:has(.properties-content),
   .sketchmind-canvas .sidebar:has(.properties-content),
@@ -2664,7 +2682,7 @@
     padding-top: 24px !important;
     overflow-y: auto !important;
   }
-  
+
   /* Drag handle for bottom sheet */
   #sketchmind-canvas-wrapper .sidebar:has(.properties-content)::before,
   .sketchmind-canvas .sidebar:has(.properties-content)::before,
@@ -2681,7 +2699,7 @@
     background: rgba(255, 255, 255, 0.2);
     z-index: 10;
   }
-  
+
   /* Prevent horizontal scroll */
   body {
     overflow-x: hidden;

@@ -175,60 +175,63 @@ const Dashboard = () => {
 						Your <span className="font-hand text-4xl text-gradient-brand leading-[1.2] inline-block pb-1.5 pr-1">boards</span>
 					</h1>
 				</div>
-				<div className="flex flex-col sm:flex-row items-end sm:items-center gap-3 w-full sm:w-auto">
-					<div className="relative w-full sm:w-[200px]">
-						<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-						<input
-							type="text"
-							placeholder="Search boards..."
-							value={searchQuery}
-							onChange={(e) => setSearchQuery(e.target.value)}
-							className="w-full h-9 pl-9 pr-8 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all placeholder:text-[rgba(255,255,255,0.45)]"
-						/>
-						{searchQuery && (
-							<button
-								onClick={() => setSearchQuery("")}
-								className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-								<span className="text-lg leading-none">&times;</span>
-							</button>
-						)}
+				<div className="flex items-center justify-between gap-3 w-full sm:w-auto">
+					<div className="flex items-center gap-2 flex-1 sm:flex-initial">
+						<div className="relative flex-1 sm:w-[200px]">
+							<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+							<input
+								type="text"
+								placeholder="Search boards..."
+								value={searchQuery}
+								onChange={(e) => setSearchQuery(e.target.value)}
+								className="w-full h-9 pl-9 pr-8 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all placeholder:text-[rgba(255,255,255,0.45)]"
+							/>
+							{searchQuery && (
+								<button
+									onClick={() => setSearchQuery("")}
+									className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+									<span className="text-lg leading-none">&times;</span>
+								</button>
+							)}
+						</div>
+
+						<DropdownMenu>
+							<DropdownMenuTrigger asChild>
+								<Button
+									variant="outline"
+									className="h-9 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-sm px-3 hover:bg-[rgba(255,255,255,0.08)] font-normal justify-between group/sort whitespace-nowrap"
+									style={sortWidth ? { width: `${sortWidth}px` } : undefined}>
+									<span className="inline-flex items-center gap-2 min-w-0">
+										<ActiveSortIcon className="h-4 w-4 flex-shrink-0 transition-transform duration-200 group-hover/sort:scale-110 group-hover/sort:-rotate-6" />
+										<span>{activeSort.label}</span>
+									</span>
+									<ChevronDown className="h-4 w-4 ml-2 opacity-50" />
+								</Button>
+							</DropdownMenuTrigger>
+							<DropdownMenuContent
+								align="end"
+								className="bg-background border-[rgba(255,255,255,0.1)]"
+								style={sortWidth ? { width: `${sortWidth}px` } : undefined}>
+								{sortOptions.map((option) => {
+									const OptionIcon = option.icon;
+
+									return (
+										<DropdownMenuItem
+											key={option.value}
+											className="text-sm cursor-pointer group/item gap-2"
+											onClick={() => setSortBy(option.value)}>
+											<OptionIcon className="h-4 w-4 transition-transform duration-200 group-hover/item:scale-125 group-hover/item:-rotate-12" />
+											{option.label}
+										</DropdownMenuItem>
+									);
+								})}
+							</DropdownMenuContent>
+						</DropdownMenu>
 					</div>
 
-					<DropdownMenu>
-						<DropdownMenuTrigger asChild>
-							<Button
-								variant="outline"
-								className="h-9 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-sm px-3 hover:bg-[rgba(255,255,255,0.08)] font-normal justify-between group/sort whitespace-nowrap"
-								style={sortWidth ? { width: `${sortWidth}px` } : undefined}>
-								<span className="inline-flex items-center gap-2 min-w-0">
-									<ActiveSortIcon className="h-4 w-4 flex-shrink-0 transition-transform duration-200 group-hover/sort:scale-110 group-hover/sort:-rotate-6" />
-									<span>{activeSort.label}</span>
-								</span>
-								<ChevronDown className="h-4 w-4 ml-2 opacity-50" />
-							</Button>
-						</DropdownMenuTrigger>
-						<DropdownMenuContent
-							align="end"
-							className="bg-background border-[rgba(255,255,255,0.1)]"
-							style={sortWidth ? { width: `${sortWidth}px` } : undefined}>
-							{sortOptions.map((option) => {
-								const OptionIcon = option.icon;
-
-								return (
-									<DropdownMenuItem
-										key={option.value}
-										className="text-sm cursor-pointer group/item gap-2"
-										onClick={() => setSortBy(option.value)}>
-										<OptionIcon className="h-4 w-4 transition-transform duration-200 group-hover/item:scale-125 group-hover/item:-rotate-12" />
-										{option.label}
-									</DropdownMenuItem>
-								);
-							})}
-						</DropdownMenuContent>
-					</DropdownMenu>
 					<div
 						ref={measureRef}
-						className="absolute left-[-9999px] top-0 pointer-events-none flex flex-col gap-2 whitespace-nowrap text-sm"
+						className="fixed left-0 top-0 opacity-0 -z-50 pointer-events-none flex flex-col gap-2 whitespace-nowrap text-sm"
 						aria-hidden>
 						{sortOptions.map((option) => {
 							const OptionIcon = option.icon;
@@ -247,8 +250,8 @@ const Dashboard = () => {
 						})}
 					</div>
 
-					<div className="flex items-center gap-3 w-full sm:w-auto justify-between sm:justify-start mt-2 sm:mt-0">
-						<span className="text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+					<div className="flex items-center gap-3 w-auto justify-end sm:justify-start">
+						<span className="hidden md:inline text-xs text-muted-foreground tabular-nums whitespace-nowrap">
 							{list.length} / {boardLimit}
 						</span>
 						<Button
@@ -256,9 +259,10 @@ const Dashboard = () => {
 								void handleCreate();
 							}}
 							disabled={atLimit}
-							className="group/new gap-2 bg-gradient-brand text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-transform hover:scale-[1.03] active:scale-95 whitespace-nowrap">
+							className="group/new gap-2 bg-gradient-brand text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-transform hover:scale-[1.03] active:scale-95 whitespace-nowrap px-3 sm:px-4">
 							<Plus className="h-4 w-4 transition-transform duration-300 ease-out group-hover/new:rotate-90" />
-							New board
+							<span className="hidden sm:inline">New board</span>
+							<span className="sm:hidden">New</span>
 						</Button>
 					</div>
 				</div>

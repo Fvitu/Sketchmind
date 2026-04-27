@@ -129,7 +129,7 @@ export const BoardCard = ({ board, onRename, onDuplicate, onDelete, isActionsAct
 					<DropdownMenuTrigger asChild>
 						<button
 							data-active={triggerActive}
-							className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground opacity-0 group-hover:opacity-100 data-[state=open]:opacity-100 data-[active=true]:opacity-100 data-[active=true]:bg-accent data-[active=true]:text-foreground transition-opacity"
+							className="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground data-[active=true]:bg-accent data-[active=true]:text-foreground transition-all"
 							aria-label="Board actions">
 							<motion.div whileHover={triggerActive ? undefined : { scale: 1.1, rotate: 360 }} transition={{ duration: 0.45, ease: "easeOut" }}>
 								<MoreHorizontal className="h-4 w-4" />
