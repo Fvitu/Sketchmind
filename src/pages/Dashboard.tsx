@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { useNavigate } from "react-router-dom";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 type SortOption = "name" | "updated_at" | "created_at";
 type TabOption = "my_boards" | "shared";
@@ -38,8 +39,11 @@ const Dashboard = () => {
 	const [activeTab, setActiveTab] = useState<TabOption>("my_boards");
 	const [sortBy, setSortBy] = useState<SortOption>(getSavedSort());
 	const [sortWidth, setSortWidth] = useState<number | null>(null);
+	const [newBoardWidth, setNewBoardWidth] = useState<number | null>(null);
 	const measureRef = useRef<HTMLDivElement | null>(null);
+	const newBoardMeasureRef = useRef<HTMLDivElement | null>(null);
 	const [searchQuery, setSearchQuery] = useState("");
+	const isMobile = useIsMobile();
 	const activeSort = sortOptions.find((option) => option.value === sortBy) ?? sortOptions[0];
 	const ActiveSortIcon = activeSort.icon;
 
@@ -48,8 +52,9 @@ const Dashboard = () => {
 	}, [sortBy]);
 
 	useLayoutEffect(() => {
-		if (!measureRef.current) return;
+		if (!measureRef.current || !newBoardMeasureRef.current) return;
 		setSortWidth(Math.ceil(measureRef.current.scrollWidth));
+		setNewBoardWidth(Math.ceil(newBoardMeasureRef.current.scrollWidth));
 	}, []);
 
 	useEffect(() => {
@@ -175,43 +180,43 @@ const Dashboard = () => {
 						Your <span className="font-hand text-4xl text-gradient-brand leading-[1.2] inline-block pb-1.5 pr-1">boards</span>
 					</h1>
 				</div>
-				<div className="flex items-center justify-between gap-3 w-full sm:w-auto">
-					<div className="flex items-center gap-2 flex-1 sm:flex-initial">
-						<div className="relative flex-1 sm:w-[200px]">
-							<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-							<input
-								type="text"
-								placeholder="Search boards..."
-								value={searchQuery}
-								onChange={(e) => setSearchQuery(e.target.value)}
-								className="w-full h-9 pl-9 pr-8 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all placeholder:text-[rgba(255,255,255,0.45)]"
-							/>
-							{searchQuery && (
-								<button
-									onClick={() => setSearchQuery("")}
-									className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
-									<span className="text-lg leading-none">&times;</span>
-								</button>
-							)}
-						</div>
+				<div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+					<div className="relative w-full sm:w-[220px]">
+						<Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+						<input
+							type="text"
+							placeholder="Search boards..."
+							value={searchQuery}
+							onChange={(e) => setSearchQuery(e.target.value)}
+							className="w-full h-9 pl-9 pr-8 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-sm focus:outline-none focus:ring-1 focus:ring-primary focus:border-transparent transition-all placeholder:text-[rgba(255,255,255,0.45)]"
+						/>
+						{searchQuery && (
+							<button
+								onClick={() => setSearchQuery("")}
+								className="absolute right-2.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground">
+								<span className="text-lg leading-none">&times;</span>
+							</button>
+						)}
+					</div>
 
+					<div className="flex items-center gap-3 w-full sm:w-auto">
 						<DropdownMenu>
 							<DropdownMenuTrigger asChild>
 								<Button
 									variant="outline"
-									className="h-9 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-sm px-3 hover:bg-[rgba(255,255,255,0.08)] font-normal justify-between group/sort whitespace-nowrap"
-									style={sortWidth ? { width: `${sortWidth}px` } : undefined}>
-									<span className="inline-flex items-center gap-2 min-w-0">
+									className="h-9 rounded-lg bg-[rgba(255,255,255,0.05)] border border-[rgba(255,255,255,0.1)] text-sm px-3 hover:bg-[rgba(255,255,255,0.08)] font-normal justify-center sm:justify-between group/sort whitespace-nowrap flex-1 sm:flex-initial w-full sm:w-auto min-w-0"
+									style={sortWidth && !isMobile ? { width: `${sortWidth}px` } : undefined}>
+									<span className="inline-flex items-center justify-center gap-2 min-w-0 max-w-full sm:flex-1">
 										<ActiveSortIcon className="h-4 w-4 flex-shrink-0 transition-transform duration-200 group-hover/sort:scale-110 group-hover/sort:-rotate-6" />
-										<span>{activeSort.label}</span>
+										<span className="truncate min-w-0 max-w-full">{activeSort.label}</span>
 									</span>
-									<ChevronDown className="h-4 w-4 ml-2 opacity-50" />
+									<ChevronDown className="h-4 w-4 ml-2 opacity-50 flex-shrink-0 hidden sm:block" />
 								</Button>
 							</DropdownMenuTrigger>
 							<DropdownMenuContent
 								align="end"
-								className="bg-background border-[rgba(255,255,255,0.1)]"
-								style={sortWidth ? { width: `${sortWidth}px` } : undefined}>
+								className="bg-background border-[rgba(255,255,255,0.1)] min-w-0"
+								style={isMobile ? { width: "var(--radix-dropdown-menu-trigger-width)" } : (sortWidth ? { width: `${sortWidth}px` } : undefined)}>
 								{sortOptions.map((option) => {
 									const OptionIcon = option.icon;
 
@@ -227,6 +232,24 @@ const Dashboard = () => {
 								})}
 							</DropdownMenuContent>
 						</DropdownMenu>
+
+						<div className="flex items-center gap-3 flex-1 sm:flex-initial min-w-0">
+							<span className="hidden md:inline text-xs text-muted-foreground tabular-nums whitespace-nowrap">
+								{list.length} / {boardLimit}
+							</span>
+							<Button
+								onClick={() => {
+									void handleCreate();
+								}}
+								disabled={atLimit}
+								className="group/new gap-2 bg-gradient-brand text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-transform hover:scale-[1.03] active:scale-95 whitespace-nowrap px-3 sm:px-4 flex-1 sm:flex-initial w-full sm:w-auto min-w-0 justify-center"
+								style={newBoardWidth && !isMobile ? { width: `${newBoardWidth}px` } : undefined}>
+								<span className="inline-flex items-center justify-center gap-2 min-w-0 max-w-full">
+									<Plus className="h-4 w-4 transition-transform duration-300 ease-out group-hover/new:rotate-90 flex-shrink-0" />
+									<span className="truncate min-w-0 max-w-full">New board</span>
+								</span>
+							</Button>
+						</div>
 					</div>
 
 					<div
@@ -250,20 +273,14 @@ const Dashboard = () => {
 						})}
 					</div>
 
-					<div className="flex items-center gap-3 w-auto justify-end sm:justify-start">
-						<span className="hidden md:inline text-xs text-muted-foreground tabular-nums whitespace-nowrap">
-							{list.length} / {boardLimit}
-						</span>
-						<Button
-							onClick={() => {
-								void handleCreate();
-							}}
-							disabled={atLimit}
-							className="group/new gap-2 bg-gradient-brand text-primary-foreground hover:opacity-90 disabled:opacity-50 transition-transform hover:scale-[1.03] active:scale-95 whitespace-nowrap px-3 sm:px-4">
-							<Plus className="h-4 w-4 transition-transform duration-300 ease-out group-hover/new:rotate-90" />
-							<span className="hidden sm:inline">New board</span>
-							<span className="sm:hidden">New</span>
-						</Button>
+					<div
+						ref={newBoardMeasureRef}
+						className="fixed left-0 top-0 opacity-0 -z-50 pointer-events-none whitespace-nowrap text-sm px-4"
+						aria-hidden>
+						<div className="inline-flex h-9 items-center justify-center gap-2 font-medium">
+							<Plus className="h-4 w-4" />
+							<span>New board</span>
+						</div>
 					</div>
 				</div>
 			</header>
@@ -367,9 +384,12 @@ const DashboardSkeleton = () => (
 				<Skeleton className="h-4 w-40" />
 				<Skeleton className="h-10 w-72 max-w-full" />
 			</div>
-			<div className="flex items-center gap-3">
-				<Skeleton className="h-4 w-16" />
-				<Skeleton className="h-10 w-32 rounded-md" />
+			<div className="flex flex-col sm:flex-row items-center gap-3 w-full sm:w-auto">
+				<Skeleton className="h-9 w-full sm:w-[220px] rounded-lg" />
+				<div className="flex items-center gap-3 w-full sm:w-auto">
+					<Skeleton className="h-9 flex-1 sm:w-32 rounded-lg" />
+					<Skeleton className="h-9 flex-1 sm:w-28 rounded-lg" />
+				</div>
 			</div>
 		</header>
 

@@ -16,7 +16,7 @@ type ConnectionStatus = "initial" | "connecting" | "connected" | "reconnecting" 
 interface BoardHeaderProps {
   boardId: string;
   boardName: string;
-  canEdit: boolea
+  canEdit: boolean;
   isExporting: boolean;
   saveStatus: SaveStatus;
   connectionStatus?: ConnectionStatus;

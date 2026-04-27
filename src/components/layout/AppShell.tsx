@@ -62,11 +62,17 @@ export const AppShell = () => {
 
 	useEffect(() => {
 		const handleScroll = () => {
-			setScrolled(window.scrollY > 10);
+			const offset = window.pageYOffset || document.documentElement.scrollTop;
+			setScrolled(offset > 8);
 		};
-		window.addEventListener("scroll", handleScroll);
+		window.addEventListener("scroll", handleScroll, { passive: true });
+		handleScroll(); // Initial check
 		return () => window.removeEventListener("scroll", handleScroll);
 	}, []);
+
+	useEffect(() => {
+		setScrolled(false);
+	}, [location.pathname]);
 
 	useLayoutEffect(() => {
 		const to = measureTab(activeTab);
@@ -120,13 +126,18 @@ export const AppShell = () => {
 			{/* Top Bar with Glassmorphism */}
 			<header
 				className={cn(
-					"fixed top-0 left-0 right-0 z-40 h-16 flex items-center px-6 transition-all duration-300 border-b border-transparent",
-					scrolled && "bg-background/80 backdrop-blur-md border-border/40 shadow-lg shadow-black/5",
-				)}>
+					"fixed top-0 left-0 right-0 z-40 h-16 flex items-center px-4 sm:px-6 transition-all duration-300 border-b",
+					scrolled
+						? "bg-background/80 backdrop-blur-lg border-border/40 shadow-lg shadow-black/5"
+						: "bg-background/40 backdrop-blur-md border-border/10 sm:bg-transparent sm:backdrop-blur-none sm:border-transparent",
+				)}
+				style={{
+					WebkitBackdropFilter: scrolled ? "blur(12px) saturate(160%)" : "blur(8px) saturate(120%)",
+				}}>
 				<Logo />
 			</header>
 
-			<main className="relative z-10 flex-1 min-w-0 pb-[100px] pt-[80px]">
+			<main className="relative z-10 flex-1 min-w-0 pb-[100px] pt-[72px] sm:pt-[80px]">
 				<div className="mx-auto max-w-6xl w-full px-5 md:px-8">
 					<AnimatedOutlet />
 				</div>

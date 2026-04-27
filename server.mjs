@@ -1564,7 +1564,6 @@ function verifyMagicToken(token) {
 function escapeHtml(value) {
 	return String(value).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;").replaceAll('"', "&quot;").replaceAll("'", "&#39;");
 }
-
 function buildMagicLinkEmail({ url, host, email }) {
 	const safeUrl = escapeHtml(url);
 	const safeHost = escapeHtml(host);
