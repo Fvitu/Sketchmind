@@ -1,11 +1,13 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
 import { motion } from "framer-motion";
-import { MoreHorizontal, Pencil, Trash2, Lock, Copy } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, Lock, Copy, Globe, Users } from "lucide-react";
 import { Board } from "@/lib/store";
 import { relativeTime } from "@/lib/format";
 import { exportToSvg } from "@excalidraw/excalidraw";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
+import { cn } from "@/lib/utils";
+
 
 const BoardThumbnail = ({ board, palette }: { board: Board; palette: string }) => {
 	const [svgStr, setSvgStr] = useState<string | null>(null);
@@ -98,6 +100,8 @@ export const BoardCard = ({ board, onRename, onDuplicate, onDelete, isActionsAct
 	const seed = board.id.charCodeAt(0) + board.id.charCodeAt(board.id.length - 1);
 	const palette = palettes[seed % palettes.length];
 	const triggerActive = open || isActionsActive;
+	const isPublic = board.visibility === "shared";
+	const isSharedWithMe = board.role && board.role !== "owner";
 
 	return (
 		<motion.div
@@ -117,8 +121,28 @@ export const BoardCard = ({ board, onRename, onDuplicate, onDelete, isActionsAct
 				<Link to={`/board/${board.id}`} className="min-w-0 flex-1">
 					<h3 className="truncate text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{board.title}</h3>
 					<div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
-						<span className="inline-flex items-center gap-1 rounded-md bg-accent/60 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide">
-							<Lock className="h-2.5 w-2.5" /> Private
+						<span
+							className={cn(
+								"inline-flex items-center gap-1 rounded-md px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide transition-all duration-300",
+								isSharedWithMe
+									? "bg-violet-500/20 text-violet-300 shadow-[0_0_10px_-2px_rgba(139,92,246,0.4)] border border-violet-500/20"
+									: isPublic
+										? "bg-emerald-500/15 text-emerald-500 shadow-[0_0_8px_-2px_rgba(16,185,129,0.3)]"
+										: "bg-accent/60 text-muted-foreground"
+							)}>
+							{isSharedWithMe ? (
+								<>
+									<Users className="h-2.5 w-2.5" /> Editor
+								</>
+							) : isPublic ? (
+								<>
+									<Globe className="h-2.5 w-2.5" /> Public
+								</>
+							) : (
+								<>
+									<Lock className="h-2.5 w-2.5" /> Private
+								</>
+							)}
 						</span>
 						<span>·</span>
 						<span>Edited {relativeTime(board.last_edited_at)}</span>
@@ -136,21 +160,23 @@ export const BoardCard = ({ board, onRename, onDuplicate, onDelete, isActionsAct
 							</motion.div>
 						</button>
 					</DropdownMenuTrigger>
-					<DropdownMenuContent align="end" className="w-40 data-[state=open]:[animation:none] data-[state=closed]:[animation:none]">
-						<DropdownMenuItem onClick={() => onRename(board)} className="group/item gap-2 focus:bg-accent focus:text-foreground">
-							<Pencil className="h-4 w-4 transition-transform duration-200 group-hover/item:scale-125 group-hover/item:-rotate-12" />
-							Rename
-						</DropdownMenuItem>
+					<DropdownMenuContent align="end" className="w-44 data-[state=open]:[animation:none] data-[state=closed]:[animation:none]">
+						{!isSharedWithMe && (
+							<DropdownMenuItem onClick={() => onRename(board)} className="group/item gap-2 focus:bg-accent focus:text-foreground">
+								<Pencil className="h-4 w-4 transition-transform duration-200 group-hover/item:scale-125 group-hover/item:-rotate-12" />
+								Rename
+							</DropdownMenuItem>
+						)}
 						<DropdownMenuItem onClick={() => onDuplicate(board)} className="group/item gap-2 focus:bg-accent focus:text-foreground">
 							<Copy className="h-4 w-4 transition-transform duration-200 group-hover/item:scale-125 group-hover/item:-rotate-12" />
-							Duplicate
+							{isSharedWithMe ? "Make a copy" : "Duplicate"}
 						</DropdownMenuItem>
 						<DropdownMenuSeparator />
 						<DropdownMenuItem
 							onClick={() => onDelete(board)}
 							className="text-destructive focus:text-destructive focus:bg-destructive/10 group/item gap-2">
 							<Trash2 className="h-4 w-4 transition-transform duration-200 group-hover/item:scale-125 group-hover/item:-rotate-12" />
-							Delete
+							{isSharedWithMe ? "Remove" : "Delete"}
 						</DropdownMenuItem>
 					</DropdownMenuContent>
 				</DropdownMenu>

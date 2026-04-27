@@ -315,17 +315,25 @@ const Dashboard = () => {
 				</div>
 			)}
 
-			{list.length === 0 && activeTab === "my_boards" && searchQuery === "" ? (
-				<div className="flex flex-col items-center justify-center py-20 text-center space-y-4">
-					<p className="text-muted-foreground">You don't have any boards yet.</p>
+			{activeTab === "my_boards" && myBoards.length === 0 && searchQuery === "" ? (
+				<div className="flex flex-col items-center justify-center py-16 gap-6">
+					<img src="/illustrations/empty-state-my-boards.png" alt="" aria-hidden="true" className="w-64 h-auto opacity-80" />
+					<div className="text-center">
+						<p className="text-white/70 text-sm font-medium">No boards yet.</p>
+						<p className="text-white/40 text-xs mt-1">Create your first board and start thinking visually.</p>
+					</div>
 					<Button onClick={() => void handleCreate()} disabled={atLimit} className="gap-2 bg-gradient-brand text-primary-foreground">
 						<Plus className="h-4 w-4" />
 						Create your first board
 					</Button>
 				</div>
 			) : activeTab === "shared" && sharedBoards.length === 0 && searchQuery === "" ? (
-				<div className="flex items-center justify-center py-20">
-					<p className="text-[rgba(255,255,255,0.35)]">No one has shared a board with you yet.</p>
+				<div className="flex flex-col items-center justify-center py-16 gap-6">
+					<img src="/illustrations/empty-state-shared.png" alt="" aria-hidden="true" className="w-64 h-auto opacity-80" />
+					<div className="text-center">
+						<p className="text-white/70 text-sm font-medium">Nothing shared with you yet.</p>
+						<p className="text-white/40 text-xs mt-1">When someone invites you to a board, it will appear here.</p>
+					</div>
 				</div>
 			) : filteredList.length === 0 && searchQuery !== "" ? (
 				<div className="flex items-center justify-center py-20">
@@ -342,13 +350,6 @@ const Dashboard = () => {
 								onDelete={setDeleteTarget}
 								isActionsActive={activeBoardId === b.id}
 							/>
-							{activeTab === "shared" && (
-								<div className="absolute top-3 right-3 z-10 pointer-events-none">
-									<span className="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-semibold tracking-wider uppercase bg-violet-500/20 text-violet-400 border border-violet-500/30 backdrop-blur-md">
-										EDITOR
-									</span>
-								</div>
-							)}
 						</div>
 					))}
 				</div>
@@ -416,30 +417,6 @@ const DashboardSkeleton = () => (
 
 		<span className="sr-only">Loading boards</span>
 	</motion.div>
-);
-
-const EmptyState = ({ onCreate }: { onCreate: () => void }) => (
-	<div className="relative overflow-hidden rounded-2xl border border-border bg-gradient-card p-10 sm:p-16 text-center">
-		<div className="absolute inset-0 bg-dotgrid opacity-40" />
-		<div className="relative space-y-5 max-w-md mx-auto">
-			<div className="mx-auto h-14 w-14 rounded-2xl bg-gradient-brand grid place-items-center shadow-glow-accent">
-				<Plus className="h-6 w-6 text-primary-foreground" />
-			</div>
-			<div className="space-y-2">
-				<h2 className="text-2xl font-semibold tracking-tight">
-					A blank page,
-					<br />
-					<span className="font-hand text-3xl text-gradient-brand leading-[1.2] inline-block pb-1.5 pr-1">infinite ideas.</span>
-				</h2>
-				<p className="text-sm text-muted-foreground">
-					Sketchmind is your visual workspace for studying and thinking. Start by creating your first board.
-				</p>
-			</div>
-			<Button onClick={onCreate} className="gap-2 bg-gradient-brand text-primary-foreground hover:opacity-90">
-				<Plus className="h-4 w-4 !transform-none" /> Create your first board
-			</Button>
-		</div>
-	</div>
 );
 
 export default Dashboard;

@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
-import { Download, LoaderCircle, PencilLine, Share2 } from "lucide-react";
+import { Download, Globe, LoaderCircle, PencilLine, Share2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -9,7 +9,7 @@ import { boards as boardsApi } from "@/lib/store";
 import type { SaveStatus } from "@/types/canvas";
 import { PresenceAvatars } from "./PresenceAvatars";
 import { ShareDialog } from "./ShareDialog";
-import type { useOthers, useSelf } from "@liveblocks/react/suspense";
+import { useOthers, useSelf } from "@liveblocks/react/suspense";
 
 type ConnectionStatus = "initial" | "connecting" | "connected" | "reconnecting" | "disconnected";
 
@@ -21,8 +21,8 @@ interface BoardHeaderProps {
   saveStatus: SaveStatus;
   connectionStatus?: ConnectionStatus;
   isOwner?: boolean;
-  self?: ReturnType<typeof useSelf>;
-  others?: ReturnType<typeof useOthers>;
+  self?: any;
+  others?: readonly any[];
   isShared: boolean;
   onBoardNameChange: (nextName: string) => void;
   onExportPNG: () => void;
@@ -163,6 +163,16 @@ export function BoardHeader({
           </button>
         )}
       </div>
+
+      {!isOwner ? (
+        <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-violet-500/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-violet-300 shadow-[0_0_10px_-2px_rgba(139,92,246,0.4)] border border-violet-500/20 transition-all">
+          <Users className="h-2.5 w-2.5" /> Editor
+        </span>
+      ) : isShared ? (
+        <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-emerald-500 shadow-[0_0_8px_-2px_rgba(16,185,129,0.3)] transition-all">
+          <Globe className="h-2.5 w-2.5" /> Public
+        </span>
+      ) : null}
 
       {!canEdit && (
         <span className="rounded-md border border-border bg-accent/60 px-2 py-1 text-[11px] uppercase tracking-wide text-muted-foreground">

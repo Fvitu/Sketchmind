@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
-import type { useOthers } from "@liveblocks/react/suspense";
+import { useOthers } from "@liveblocks/react/suspense";
 import { getUserColor } from "@/lib/colors";
 
 interface CollaboratorCursorsProps {
-	others: ReturnType<typeof useOthers>;
+	others: readonly any[];
 	excalidrawAPI: MutableRefObject<ExcalidrawImperativeAPI | null>;
 }
 

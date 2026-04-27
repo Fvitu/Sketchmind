@@ -147,7 +147,7 @@ export function CollaborativeCanvas({
 	useEffect(() => {
 		if (!excalidrawAPI.current) return;
 
-		const collaborators = new Map<string, any>();
+		const collaborators = new Map<any, any>();
 
 		others.forEach((other) => {
 			const color = other.presence?.color || getUserColor(other.connectionId);
@@ -262,7 +262,7 @@ export function CollaborativeCanvas({
 
 	return (
 		<div
-			className="fixed inset-0 flex flex-col bg-background touch- xjy jvtdozsc unone"
+			className="fixed inset-0 flex flex-col bg-background touch-none select-none"
 			onPointerMove={handlePointerMove}
 			onPointerLeave={handlePointerLeave}
 		>

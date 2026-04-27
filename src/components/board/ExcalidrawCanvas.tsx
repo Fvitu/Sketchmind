@@ -88,7 +88,7 @@ const EXCALIDRAW_UI_OPTIONS = {
 		saveToActiveFile: false,
 		toggleTheme: false,
 	},
-};
+} as const;
 
 interface RGBAColor {
 	r: number;

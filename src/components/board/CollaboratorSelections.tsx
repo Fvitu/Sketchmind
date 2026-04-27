@@ -1,10 +1,10 @@
 import { useEffect, useRef, useState, type MutableRefObject } from "react";
 import type { ExcalidrawImperativeAPI } from "@excalidraw/excalidraw/types";
+import { useOthers } from "@liveblocks/react/suspense";
 import { getUserColor } from "@/lib/colors";
-import type { useOthers } from "@liveblocks/react/suspense";
 
 interface CollaboratorSelectionsProps {
-	others: ReturnType<typeof useOthers>;
+	others: readonly any[];
 	excalidrawAPI: MutableRefObject<ExcalidrawImperativeAPI | null>;
 }
 
@@ -71,7 +71,7 @@ export function CollaboratorSelections({ others, excalidrawAPI }: CollaboratorSe
 					return (
 						<div
 							key={`${other.connectionId}-${el.id}`}
-							className="absolute pointer-events-none border-2 dashed"
+							className="absolute pointer-events-none border-2 border-dashed"
 							style={{
 								left: el.x,
 								top: el.y,

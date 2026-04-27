@@ -1,10 +1,11 @@
 // PresenceAvatars — shows avatar circles for all connected users.
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import type { useOthers, useSelf } from "@liveblocks/react/suspense";
+import { useOthers, useSelf } from "@liveblocks/react/suspense";
+import { getUserColor } from "@/lib/colors";
 
 interface PresenceAvatarsProps {
-	self: ReturnType<typeof useSelf>;
-	others: ReturnType<typeof useOthers>;
+	self: any;
+	others: readonly any[];
 }
 
 function Avatar({
@@ -62,8 +63,6 @@ function Avatar({
 		</Popover>
 	);
 }
-
-import { getUserColor } from "@/lib/colors";
 
 export function PresenceAvatars({ self, others }: PresenceAvatarsProps) {
 	const MAX_SHOWN = 4;
