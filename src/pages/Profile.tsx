@@ -24,6 +24,13 @@ const Profile = () => {
     }
   }, [user]);
 
+  useEffect(() => {
+    document.title = "Sketchmind - Profile";
+    return () => {
+      document.title = "Sketchmind";
+    };
+  }, []);
+
   if (!user) return null;
 
   const dirty = name.trim() !== user.display_name;

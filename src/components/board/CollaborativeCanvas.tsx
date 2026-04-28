@@ -50,7 +50,9 @@ export function CollaborativeCanvas({
 	// Track whether we are currently applying a remote update to avoid echo loops
 	const isApplyingRemoteUpdate = useRef(false);
 	// Track the last elements JSON we broadcast to avoid re-broadcasting our own echoed update
-	const lastBroadcastedElements = useRef<string>("");
+	const lastBroadcastedElements = useRef<string>(initialCanvasData?.elements ? JSON.stringify(initialCanvasData.elements) : "");
+	// Track the last files JSON we broadcast
+	const lastBroadcastedFiles = useRef<string>(initialCanvasData?.files ? JSON.stringify(initialCanvasData.files) : "");
 	// Throttle cursor updates
 	const lastCursorUpdate = useRef<number>(0);
 
@@ -61,17 +63,26 @@ export function CollaborativeCanvas({
 	const others = useOthers();
 	const self = useSelf();
 	const connectionStatus = useStatus();
-	const { saveStatus, scheduleSave } = useBoardAutoSave({
+	const { saveStatus, scheduleSave, hasUnsavedChanges } = useBoardAutoSave({
 		boardId,
 		debounceMs: 2000,
 	});
 
-	// Read shared canvas elements from Liveblocks Storage
+	useEffect(() => {
+		document.title = `Sketchmind - ${currentBoardName}`;
+		return () => {
+			document.title = "Sketchmind";
+		};
+	}, [currentBoardName]);
+
+	// Read shared canvas elements and files from Liveblocks Storage
 	const sharedElements = useStorage((root) => root.excalidrawElements);
+	const sharedFiles = useStorage((root) => root.excalidrawFiles);
 
 	// Write to Liveblocks Storage
-	const updateSharedElements = useMutation(({ storage }, elementsJson: string) => {
+	const updateSharedStorage = useMutation(({ storage }, elementsJson: string, filesJson: string) => {
 		storage.set("excalidrawElements", elementsJson);
+		storage.set("excalidrawFiles", filesJson);
 	}, []);
 
 	// Sync self info (name, color, avatar) into presence after Liveblocks auth completes
@@ -90,18 +101,23 @@ export function CollaborativeCanvas({
 		if (!excalidrawAPI.current || sharedElements === null) return;
 
 		// Skip if this is our own broadcast echoed back
-		if (sharedElements === lastBroadcastedElements.current) return;
+		if (sharedElements === lastBroadcastedElements.current && sharedFiles === lastBroadcastedFiles.current) return;
 
 		try {
 			const elements: ExcalidrawElement[] = JSON.parse(sharedElements);
+			const files: BinaryFiles = sharedFiles ? JSON.parse(sharedFiles) : {};
+			
 			isApplyingRemoteUpdate.current = true;
-			excalidrawAPI.current.updateScene({ elements });
+			excalidrawAPI.current.updateScene({ elements, files });
+			
+			lastBroadcastedElements.current = sharedElements;
+			if (sharedFiles) lastBroadcastedFiles.current = sharedFiles;
 		} catch (err) {
 			console.error("[CollaborativeCanvas] Failed to apply remote update:", err);
 		} finally {
 			isApplyingRemoteUpdate.current = false;
 		}
-	}, [sharedElements]);
+	}, [sharedElements, sharedFiles]);
 
 	// Handle local Excalidraw changes — broadcast to Liveblocks + save to Supabase
 	const handleChange = useCallback(
@@ -123,23 +139,25 @@ export function CollaborativeCanvas({
 			updateMyPresence({ selectedElementIds: selectedIds });
 
 			const elementsJson = JSON.stringify(elements);
+			const filesJson = JSON.stringify(files);
 
-			// Skip if elements did not change (Excalidraw fires onChange on viewport pan/zoom)
-			if (elementsJson === lastBroadcastedElements.current) {
+			// Skip if nothing changed (Excalidraw fires onChange on viewport pan/zoom)
+			if (elementsJson === lastBroadcastedElements.current && filesJson === lastBroadcastedFiles.current) {
 				// Still persist appState changes (e.g. background color) to Supabase
 				scheduleSave(elements, appState, files);
 				return;
 			}
 
 			lastBroadcastedElements.current = elementsJson;
+			lastBroadcastedFiles.current = filesJson;
 
 			// Broadcast to all collaborators via Liveblocks (instant)
-			updateSharedElements(elementsJson);
+			updateSharedStorage(elementsJson, filesJson);
 
 			// Persist to Supabase (debounced 2s — durable storage)
 			scheduleSave(elements, appState, files);
 		},
-		[canEdit, updateSharedElements, scheduleSave, updateMyPresence],
+		[canEdit, updateSharedStorage, scheduleSave, updateMyPresence],
 	);
 
 	// Sync others' presence and selections into Excalidraw natively
@@ -242,7 +260,6 @@ export function CollaborativeCanvas({
 		const handleGesture = (e: Event) => {
 			e.preventDefault();
 		};
-
 		// Passive: false is required to call preventDefault()
 		window.addEventListener("wheel", handleWheel, { passive: false });
 		window.addEventListener("gesturestart", handleGesture);
@@ -280,6 +297,7 @@ export function CollaborativeCanvas({
 				onBoardNameChange={setCurrentBoardName}
 				onExportPNG={() => void handleExportPNG()}
 				onUnshared={onUnshared}
+				hasUnsavedChanges={hasUnsavedChanges}
 			/>
 
 			<div className="flex-1">

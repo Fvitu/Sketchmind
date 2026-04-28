@@ -19,6 +19,7 @@ declare global {
 		// Shared persistent storage — survives reconnects, visible to all.
 		Storage: {
 			excalidrawElements: string; // JSON.stringify(ExcalidrawElement[])
+			excalidrawFiles: string;    // JSON.stringify(BinaryFiles)
 		};
 
 		// User metadata attached to each connection by the auth endpoint.

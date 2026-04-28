@@ -31,6 +31,9 @@ export function LiveblocksRoom({
 	const initialElements = initialCanvasData?.elements
 		? JSON.stringify(initialCanvasData.elements)
 		: "";
+	const initialFiles = initialCanvasData?.files
+		? JSON.stringify(initialCanvasData.files)
+		: "";
 
 	return (
 		<LiveblocksProvider authEndpoint="/api/liveblocks-auth">
@@ -45,6 +48,7 @@ export function LiveblocksRoom({
 				}}
 				initialStorage={{
 					excalidrawElements: initialElements,
+					excalidrawFiles: initialFiles,
 				}}
 			>
 				<Suspense fallback={<LoadingScreen message="Connecting to room..." />}>

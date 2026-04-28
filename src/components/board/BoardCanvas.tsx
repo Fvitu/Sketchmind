@@ -28,11 +28,16 @@ export function BoardCanvas({
   onUnshared,
 }: BoardCanvasProps) {
   useEffect(() => {
-    // Prevent scrolling on the body while the board is active
+    // Prevent scrolling and remove scrollbar gutter on the body while the board is active
     const originalOverflow = document.body.style.overflow;
+    const originalGutter = document.documentElement.style.scrollbarGutter;
+    
     document.body.style.overflow = "hidden";
+    document.documentElement.style.scrollbarGutter = "auto";
+    
     return () => {
       document.body.style.overflow = originalOverflow;
+      document.documentElement.style.scrollbarGutter = originalGutter;
     };
   }, []);
 
@@ -42,10 +47,17 @@ export function BoardCanvas({
   const canEdit = role === "owner" || role === "editor";
   const theme = useDocumentTheme();
   const isOwner = role === "owner";
-  const { saveStatus, scheduleSave } = useBoardAutoSave({
+  const { saveStatus, scheduleSave, hasUnsavedChanges } = useBoardAutoSave({
     boardId,
     debounceMs: 2000,
   });
+
+  useEffect(() => {
+    document.title = `Sketchmind - ${currentBoardName}`;
+    return () => {
+      document.title = "Sketchmind";
+    };
+  }, [currentBoardName]);
 
   const handleSceneChange = useCallback(
     (
@@ -105,7 +117,7 @@ export function BoardCanvas({
 
   return (
     <div 
-      className="fixed inset-0 flex flex-col bg-background touch- xjy jvtdozsc unone"
+      className="fixed inset-0 flex flex-col bg-background touch-none"
       onPointerMove={() => {}}
       onPointerLeave={() => {}}
     >
@@ -123,9 +135,10 @@ export function BoardCanvas({
         }}
         onShared={onShared}
         onUnshared={onUnshared}
+        hasUnsavedChanges={hasUnsavedChanges}
       />
 
-      <div className="flex-1">
+      <div className="flex-1 w-full overflow-hidden">
         <ExcalidrawCanvas
           canEdit={canEdit}
           initialCanvasData={initialCanvasData}

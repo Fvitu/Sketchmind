@@ -51,6 +51,13 @@ const Dashboard = () => {
 		localStorage.setItem("sketchmind_sort_preference", sortBy);
 	}, [sortBy]);
 
+	useEffect(() => {
+		document.title = "Sketchmind - Dashboard";
+		return () => {
+			document.title = "Sketchmind";
+		};
+	}, []);
+
 	useLayoutEffect(() => {
 		if (!measureRef.current || !newBoardMeasureRef.current) return;
 		setSortWidth(Math.ceil(measureRef.current.scrollWidth));

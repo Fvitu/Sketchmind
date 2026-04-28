@@ -40,6 +40,13 @@ const Login = () => {
   }, [authLoading, navigate, user]);
 
   useEffect(() => {
+    document.title = "Sketchmind - Sign In";
+    return () => {
+      document.title = "Sketchmind";
+    };
+  }, []);
+
+  useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const magicToken = params.get("magic_token");
     if (magicToken) {

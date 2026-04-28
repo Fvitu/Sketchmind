@@ -53,6 +53,8 @@ const INTERACTIVE_CONTEXT_PATCHED_ATTRIBUTE = "data-sketchmind-interactive-conte
 const MOBILE_GRID_TOGGLE_ATTRIBUTE = "data-sketchmind-mobile-grid-toggle";
 const MOBILE_MAIN_MENU_SELECTOR = "button.dropdown-menu-button.main-menu-trigger.zen-mode-transition.dropdown-menu-button--mobile";
 const MOBILE_BOTTOM_ACTIONS_SELECTOR = ".App-toolbar-content";
+const MAX_IMAGE_SIZE_BYTES = 2.5 * 1024 * 1024; // 2.5MB per image limit
+
 
 const CONTEXT_MENU_ICON_RULES = [
 	{ pattern: /^(cut)$/i, Icon: Scissors },
@@ -78,7 +80,7 @@ const CONTEXT_MENU_ICON_RULES = [
 
 const EXCALIDRAW_UI_OPTIONS = {
 	tools: {
-		image: false,
+		image: true,
 	},
 	canvasActions: {
 		changeViewBackgroundColor: false,
@@ -409,6 +411,7 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 						restored.appState.currentHoveredFontFamily === 4 ? READABLE_FONT_FAMILY : restored.appState.currentHoveredFontFamily,
 					theme: EXCALIDRAW_THEME,
 					viewBackgroundColor: restored.appState.viewBackgroundColor ?? DEFAULT_BACKGROUND_COLOR,
+					collaborators: new Map(),
 				},
 				scrollToContent: true,
 			};
@@ -421,6 +424,7 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 				currentItemFontFamily: READABLE_FONT_FAMILY,
 				theme: EXCALIDRAW_THEME,
 				viewBackgroundColor: DEFAULT_BACKGROUND_COLOR,
+				collaborators: new Map(),
 			},
 			scrollToContent: false,
 		};
@@ -664,7 +668,27 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 				setSelectedBackgroundColor(sceneBackgroundColor);
 			}
 
-			onChange(elements, appState, files);
+			// Enforce file size limits - remove files that are too large
+			let filteredFiles = files;
+			const largeFileIds = Object.entries(files)
+				.filter(([_, file]) => {
+					// dataURL is base64, so it's roughly 1.33x the binary size
+					// We can approximate the binary size or just limit the dataURL length.
+					// A 2.5MB binary file is ~3.3MB base64.
+					return file.dataURL.length > MAX_IMAGE_SIZE_BYTES * 1.37;
+				})
+				.map(([id]) => id);
+
+			if (largeFileIds.length > 0) {
+				filteredFiles = { ...files };
+				largeFileIds.forEach((id) => {
+					delete (filteredFiles as any)[id];
+				});
+				// Elements referencing these files will show a 'broken image' in Excalidraw
+				// which is an acceptable way to show the limit was exceeded.
+			}
+
+			onChange(elements, appState, filteredFiles);
 		},
 		[onChange],
 	);
@@ -920,14 +944,13 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 					.sketchmind-canvas .layer-ui__wrapper .user-list { display: none !important; }
 					.sketchmind-canvas .layer-ui__wrapper .user-list-container { display: none !important; }
 					.sketchmind-canvas .layer-ui__wrapper .FixedSideContainer.top-right { display: none !important; }
+					.sketchmind-canvas .layer-ui__wrapper .FixedSideContainer.right { display: none !important; }
+					.sketchmind-canvas .layer-ui__wrapper .App-menu_right { display: none !important; }
+					.sketchmind-canvas .layer-ui__wrapper .sidebar-right { display: none !important; }
 					.sketchmind-canvas .layer-ui__wrapper .UserList__wrapper { display: none !important; }
 				`}
 			</style>
-			{!isSmallScreen && (
-				<div className="absolute right-3 top-1/2 z-20 -translate-y-1/2 sm:right-4">
-					{renderBackgroundColorPicker(false)}
-				</div>
-			)}
+
 			{isSmallScreen && mobileMiscToolsEl && createPortal(renderBackgroundColorPicker(true), mobileMiscToolsEl)}
 
 			<Excalidraw
@@ -936,22 +959,7 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 				onChange={handleSceneChange}
 				theme={EXCALIDRAW_THEME}
 				viewModeEnabled={!canEdit}
-				renderTopRightUI={useCallback(
-					(_isMobile: boolean, appState: AppState) =>
-						isSmallScreen ? null : (
-							<button
-								type="button"
-								className={cn(
-									"p-2 rounded-md transition-colors",
-									appState.gridModeEnabled ? "bg-primary/20 text-primary" : "text-muted-foreground hover:bg-accent hover:text-foreground",
-								)}
-								onClick={handleToggleNativeGrid}
-								title="Toggle Grid Overlay">
-								<Grid3X3 className="h-4 w-4" />
-							</button>
-						),
-					[isSmallScreen, handleToggleNativeGrid],
-				)}
+
 				UIOptions={EXCALIDRAW_UI_OPTIONS}
 			/>
 
@@ -961,7 +969,7 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 					aria-hidden="true"
 					className="pointer-events-none absolute left-1/2 bottom-6 z-50 -translate-x-1/2 rounded-xl px-4 py-2 text-sm text-muted-foreground transition-opacity opacity-100"
 				>
-					<div className="pointer-events-auto rounded-xl bg-background/70 px-3 py-1 shadow-md backdrop-blur">
+					<div className="pointer-events-auto rounded-xl bg-background/70 px-3 py-1 shadow-md backdrop-blur" style={{ textAlign: "center" }}>
 						{hintText}
 					</div>
 				</div>
