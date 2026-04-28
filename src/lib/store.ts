@@ -231,12 +231,6 @@ export const auth = {
 		);
 
 		const user = { ...payload.user };
-		if (user.avatar_url) {
-			// Append cache buster to ensure the UI refreshes if the URL is the same
-			const base = user.avatar_url.split("?")[0];
-			user.avatar_url = `${base}?t=${Date.now()}`;
-		}
-
 		setAuthSnapshot({ user });
 		return user;
 	},

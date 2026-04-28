@@ -21,6 +21,8 @@ import { useBoardAutoSave } from "@/hooks/useBoardAutoSave";
 import { useDocumentTheme } from "@/hooks/useDocumentTheme";
 import { getUserColor } from "@/lib/colors";
 
+import { SaveStatusIcon } from "./SaveStatusIcon";
+
 // Throttle cursor updates to avoid flooding the Liveblocks presence channel.
 // 40ms = maximum 25 presence updates per second.
 const CURSOR_THROTTLE_MS = 40;
@@ -68,10 +70,21 @@ export function CollaborativeCanvas({
 		debounceMs: 2000,
 	});
 
+
 	useEffect(() => {
 		document.title = `Sketchmind - ${currentBoardName}`;
+		
+		// Prevent scrolling and remove scrollbar gutter on the body while the board is active
+		const originalOverflow = document.body.style.overflow;
+		const originalGutter = document.documentElement.style.scrollbarGutter;
+		
+		document.body.style.overflow = "hidden";
+		document.documentElement.style.scrollbarGutter = "auto";
+		
 		return () => {
 			document.title = "Sketchmind";
+			document.body.style.overflow = originalOverflow;
+			document.documentElement.style.scrollbarGutter = originalGutter;
 		};
 	}, [currentBoardName]);
 
@@ -275,7 +288,7 @@ export function CollaborativeCanvas({
 	}, []);
 
 	// Capacity check: others.length is count of OTHER users; total = others.length + 1 (self)
-	const isAtCapacity = others.length >= 4;
+	const isAtCapacity = others.length >= 9;
 
 	return (
 		<div
@@ -300,7 +313,7 @@ export function CollaborativeCanvas({
 				hasUnsavedChanges={hasUnsavedChanges}
 			/>
 
-			<div className="flex-1">
+			<div className="flex-1 w-full overflow-hidden">
 				<ExcalidrawCanvas
 					canEdit={canEdit}
 					initialCanvasData={initialCanvasData}
@@ -314,10 +327,12 @@ export function CollaborativeCanvas({
 			<CollaboratorCursors others={others} excalidrawAPI={excalidrawAPI} />
 			<CollaboratorSelections others={others} excalidrawAPI={excalidrawAPI} />
 
+			<SaveStatusIcon status={saveStatus} />
+
 			{/* At-capacity warning banner */}
 			{isAtCapacity && (
 				<div className="pointer-events-none absolute bottom-4 left-1/2 -translate-x-1/2 rounded-full bg-destructive px-3 py-1.5 text-xs font-medium text-destructive-foreground shadow-lg">
-					Room is full (5/5 collaborators)
+					Room is full (10/10 collaborators)
 				</div>
 			)}
 		</div>

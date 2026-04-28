@@ -7,6 +7,9 @@ import http from "node:http";
 import { createClient } from "@supabase/supabase-js";
 import { OAuth2Client } from "google-auth-library";
 import { Liveblocks } from "@liveblocks/node";
+import { z } from "zod";
+import { JSDOM } from "jsdom";
+import DOMPurify from "dompurify";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const entryFilePath = fileURLToPath(import.meta.url);
@@ -22,6 +25,20 @@ const SESSION_MAX_AGE_SECONDS = 60 * 60 * 24 * 30;
 const BOARD_ASSET_BUCKET = "board-assets";
 const ALLOWED_ASSET_MIME_TYPES = new Set(["image/jpeg", "image/png", "image/gif", "image/webp", "image/svg+xml"]);
 const MAX_ASSET_SIZE_BYTES = 10 * 1024 * 1024;
+
+const boardNameSchema = z
+	.string()
+	.trim()
+	.min(1, "Board name cannot be empty")
+	.max(100, "Board name cannot exceed 100 characters")
+	.regex(/^[\p{L}\p{N}\s\-_().!?:,]+$/u, "Board name contains invalid characters")
+	.transform((val) => val.replace(/\s+/g, " "));
+
+// Rate limiting state
+// TODO: replace with persistent store (e.g. Upstash Redis) for multi-region
+const emailRateLimit = new Map();
+const ipRateLimit = new Map();
+const SECURITY_EVENT_TABLE = "security_events";
 
 loadEnvFile(envPath);
 
@@ -50,6 +67,65 @@ if (!isProd) {
 		console.warn("Vite middleware mode is unavailable, serving the built app instead.");
 		console.warn(error instanceof Error ? error.message : error);
 	}
+}
+
+async function logSecurityEvent(eventType, ipAddress, metadata = {}) {
+	try {
+		const client = getSupabaseClient();
+		await client.from(SECURITY_EVENT_TABLE).insert({
+			event_type: eventType,
+			ip_address: ipAddress,
+			metadata,
+			created_at: new Date().toISOString(),
+		});
+	} catch (error) {
+		console.error(`[Security] Failed to log event ${eventType}:`, error.message);
+	}
+}
+
+async function verifyMagicBytes(buffer, declaredMime) {
+	const bytes = new Uint8Array(buffer.slice(0, 12));
+	const signatures = {
+		"image/jpeg": [[0xff, 0xd8, 0xff]],
+		"image/png": [[0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]],
+		"image/webp": [[0x52, 0x49, 0x46, 0x46]], // RIFF header
+		"image/gif": [[0x47, 0x49, 0x46, 0x38]], // GIF8
+	};
+
+	const sigs = signatures[declaredMime];
+	if (!sigs) return false;
+
+	const matches = sigs.some((sig) => sig.every((byte, i) => bytes[i] === byte));
+
+	if (matches && declaredMime === "image/webp") {
+		// Also check bytes[8..11] === WEBP ([0x57, 0x45, 0x42, 0x50])
+		return bytes[8] === 0x57 && bytes[9] === 0x45 && bytes[10] === 0x42 && bytes[11] === 0x50;
+	}
+
+	return matches;
+}
+
+function sanitizeSvg(rawSvg) {
+	const window = new JSDOM("").window;
+	const purify = DOMPurify(window);
+
+	const cleaned = rawSvg.replace(/javascript:/gi, "");
+	return purify.sanitize(cleaned, {
+		USE_PROFILES: { svg: true, svgFilters: true },
+		FORBID_TAGS: ["script", "use"],
+		FORBID_ATTR: [
+			"onload",
+			"onclick",
+			"onerror",
+			"onmouseover",
+			"onfocus",
+			"onblur",
+			"onchange",
+			"onsubmit",
+			"formaction",
+			"href", // strip href on non-<a> elements if needed
+		],
+	});
 }
 
 export async function handleRequest(req, res) {
@@ -162,12 +238,43 @@ async function handleMagicLinkRequest(req, res) {
 		return json(res, 503, { error: "Magic link auth is not configured" });
 	}
 
+	const ip = req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.headers["x-real-ip"] || req.socket.remoteAddress;
 	const body = await readJson(req);
 	const email = normalizeEmail(body?.email);
 
 	if (!email) {
 		return json(res, 400, { error: "Enter a valid email address" });
 	}
+
+	const now = Date.now();
+
+	// IP Rate Limiting: 10 requests / 1 hour
+	const ipLimit = ipRateLimit.get(ip) || { count: 0, resetAt: now + 3600000 };
+	if (now > ipLimit.resetAt) {
+		ipLimit.count = 0;
+		ipLimit.resetAt = now + 3600000;
+	}
+	if (ipLimit.count >= 10) {
+		await logSecurityEvent("rate_limit_exceeded", ip, { email, limit_type: "ip" });
+		return json(res, 429, { error: "Too many requests. Please try again later." });
+	}
+
+	// Email Rate Limiting: 3 requests / 15 minutes
+	const emailLimit = emailRateLimit.get(email) || { count: 0, resetAt: now + 900000 };
+	if (now > emailLimit.resetAt) {
+		emailLimit.count = 0;
+		emailLimit.resetAt = now + 900000;
+	}
+	if (emailLimit.count >= 3) {
+		await logSecurityEvent("rate_limit_exceeded", ip, { email, limit_type: "email" });
+		return json(res, 429, { error: "Too many requests. Please try again later." });
+	}
+
+	// Increment counts
+	ipLimit.count++;
+	ipRateLimit.set(ip, ipLimit);
+	emailLimit.count++;
+	emailRateLimit.set(email, emailLimit);
 
 	const token = signMagicToken(email);
 	const loginUrl = new URL("/login", runtimeConfig.siteUrl);
@@ -326,7 +433,7 @@ async function handleProfileUpdate(req, res) {
 		return json(res, 404, { error: "User not found" });
 	}
 
-	return json(res, 200, { user: mapUserRow(data) });
+	return json(res, 200, { user: await mapUserRow(data) });
 }
 
 async function handleProfileAvatarUpload(req, res) {
@@ -353,8 +460,15 @@ async function handleProfileAvatarUpload(req, res) {
 	const extension = safeFileExtension(file);
 	const storagePath = `${userId}/avatar.${extension}`;
 	const buffer = Buffer.from(await file.arrayBuffer());
-	const client = getSupabaseClient();
+	const ip = req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.headers["x-real-ip"] || req.socket.remoteAddress;
 
+	const isValid = await verifyMagicBytes(buffer, file.type);
+	if (!isValid) {
+		await logSecurityEvent("magic_byte_mismatch", ip, { user_id: userId, declared_mime: file.type });
+		return json(res, 400, { error: "File content does not match its type" });
+	}
+
+	const client = getSupabaseClient();
 	const { error: uploadError } = await client.storage.from("avatars").upload(storagePath, buffer, {
 		contentType: file.type,
 		upsert: true,
@@ -381,9 +495,10 @@ async function handleProfileAvatarUpload(req, res) {
 		throw new HttpError(500, userFacingDatabaseError(dbError.message));
 	}
 
+	const mappedUser = await mapUserRow(profileData);
 	return json(res, 200, {
-		user: mapUserRow(profileData),
-		url: publicUrl,
+		user: mappedUser,
+		url: mappedUser.avatar_url,
 	});
 }
 
@@ -486,7 +601,26 @@ async function handleBoardAssetUpload(req, res, boardId) {
 
 	const extension = safeFileExtension(file);
 	const storagePath = `${boardId}/${userId}/${Date.now()}-${randomUUID()}.${extension}`;
-	const buffer = Buffer.from(await file.arrayBuffer());
+	let buffer = Buffer.from(await file.arrayBuffer());
+	const ip = req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.headers["x-real-ip"] || req.socket.remoteAddress;
+
+	if (file.type === "image/svg+xml") {
+		const rawSvg = buffer.toString("utf8");
+		const sanitized = sanitizeSvg(rawSvg);
+
+		if (!sanitized || sanitized.length < rawSvg.length * 0.5) {
+			await logSecurityEvent("svg_sanitization_stripped", ip, { board_id: boardId, original_size: rawSvg.length, sanitized_size: sanitized?.length });
+			return json(res, 400, { error: "SVG file rejected for security reasons" });
+		}
+		buffer = Buffer.from(sanitized, "utf8");
+	} else {
+		const isValid = await verifyMagicBytes(buffer, file.type);
+		if (!isValid) {
+			await logSecurityEvent("magic_byte_mismatch", ip, { board_id: boardId, declared_mime: file.type });
+			return json(res, 400, { error: "File content does not match its type" });
+		}
+	}
+
 	const client = getSupabaseClient();
 
 	const { error: uploadError } = await client.storage.from(BOARD_ASSET_BUCKET).upload(storagePath, buffer, {
@@ -539,7 +673,7 @@ async function getUserProfileByEmail(email) {
 		return null;
 	}
 
-	return mapUserRow(data);
+	return await mapUserRow(data);
 }
 
 function normalizeIncomingUser(input) {
@@ -601,7 +735,7 @@ async function persistUserProfile(identity) {
 			throw new HttpError(500, userFacingDatabaseError(error?.message || "Couldn't save your account"));
 		}
 
-		return mapUserRow(data);
+		return await mapUserRow(data);
 	}
 
 	const { data, error } = await client
@@ -634,7 +768,7 @@ async function persistUserProfile(identity) {
 					.single();
 
 				if (!updateError && updatedData) {
-					return mapUserRow(updatedData);
+					return await mapUserRow(updatedData);
 				}
 			}
 		}
@@ -642,7 +776,7 @@ async function persistUserProfile(identity) {
 		throw new HttpError(500, userFacingDatabaseError(error?.message || "Couldn't save your account"));
 	}
 
-	return mapUserRow(data);
+	return await mapUserRow(data);
 }
 
 async function uploadAvatarToSupabase(userId, sourceUrl) {
@@ -710,7 +844,7 @@ async function getUserProfileById(userId) {
 		return null;
 	}
 
-	return mapUserRow(data);
+	return await mapUserRow(data);
 }
 
 async function listBoardsForUser(userId) {
@@ -782,12 +916,20 @@ async function createBoardForUser(userId, rawTitle, rawId, template = null) {
 	const client = getSupabaseClient();
 	const profile = await getUserProfileById(userId);
 	const boardLimit = profile?.board_limit ?? DEFAULT_BOARD_LIMIT;
-	const title =
+
+	let title =
 		typeof rawTitle === "string" && rawTitle.trim()
-			? rawTitle.trim().slice(0, 80)
+			? rawTitle.trim()
 			: template?.title
-				? `Copy of ${template.title}`.slice(0, 80)
+				? `Copy of ${template.title}`
 				: "Untitled board";
+
+	const validation = boardNameSchema.safeParse(title);
+	if (!validation.success) {
+		throw new HttpError(400, validation.error.errors[0].message);
+	}
+	title = validation.data;
+
 	const id = typeof rawId === "string" && rawId.trim() ? rawId.trim() : randomUUID();
 
 	const { count, error: countError } = await client.from("boards").select("id", { count: "exact", head: true }).eq("owner_id", userId);
@@ -841,14 +983,11 @@ async function duplicateBoardForUser(userId, boardId) {
 }
 
 async function renameBoardForUser(userId, boardId, rawTitle) {
-	if (typeof rawTitle !== "string") {
-		throw new HttpError(400, "Title is required");
+	const validation = boardNameSchema.safeParse(rawTitle);
+	if (!validation.success) {
+		throw new HttpError(400, validation.error.errors[0].message);
 	}
-
-	const title = rawTitle.trim();
-	if (!title) {
-		throw new HttpError(400, "Title can't be empty");
-	}
+	const title = validation.data;
 
 	const client = getSupabaseClient();
 	const { data, error } = await client
@@ -1030,12 +1169,35 @@ async function getBoardAccessForUser(userId, boardId) {
 	return { role: membership.role };
 }
 
-function mapUserRow(row) {
+async function mapUserRow(row) {
+	let avatarUrl = row.avatar_url;
+
+	// Replace permanent URLs with signed URLs
+	if (avatarUrl && avatarUrl.includes("/storage/v1/object/public/avatars/")) {
+		try {
+			// Strip query parameters for the storage path
+			const urlWithoutQuery = avatarUrl.split("?")[0];
+			const path = urlWithoutQuery.split("/avatars/").pop();
+
+			if (path) {
+				const client = getSupabaseClient();
+				const { data, error } = await client.storage.from("avatars").createSignedUrl(path, 3600); // 1-hour expiry
+				if (error) {
+					console.error("[Security] Supabase error generating signed URL:", error.message);
+				} else if (data?.signedUrl) {
+					avatarUrl = data.signedUrl;
+				}
+			}
+		} catch (err) {
+			console.error("[Security] Failed to generate signed URL for avatar:", err instanceof Error ? err.message : String(err));
+		}
+	}
+
 	return {
 		id: row.id,
 		email: row.email,
 		display_name: row.display_name,
-		avatar_url: row.avatar_url,
+		avatar_url: avatarUrl,
 		board_limit: typeof row.board_limit === "number" && row.board_limit > 0 ? row.board_limit : DEFAULT_BOARD_LIMIT,
 		created_at: row.created_at,
 	};

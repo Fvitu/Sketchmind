@@ -478,7 +478,7 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 			return;
 		}
 
-		const mediaQuery = window.matchMedia("(max-width: 639px)");
+		const mediaQuery = window.matchMedia("(max-width: 730px)");
 		const syncViewport = (event?: MediaQueryListEvent) => {
 			setIsSmallScreen(event?.matches ?? mediaQuery.matches);
 		};

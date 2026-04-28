@@ -32,7 +32,7 @@ export const RenameDialog = ({ board, onClose, onSubmit }: Props) => {
           }}
           className="space-y-4"
         >
-          <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} autoFocus placeholder="Untitled board" />
+          <Input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={15} autoFocus placeholder="Untitled board" />
           <DialogFooter>
             <Button type="button" variant="ghost" onClick={onClose}>Cancel</Button>
             <Button

@@ -1,15 +1,18 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { Download, LoaderCircle, PencilLine, Share2, Users } from "lucide-react";
+import { ArrowLeft, Download, LoaderCircle, PencilLine, Share2, Users } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { boards as boardsApi } from "@/lib/store";
 import type { SaveStatus } from "@/types/canvas";
 import { PresenceAvatars } from "./PresenceAvatars";
 import { ShareDialog } from "./ShareDialog";
+import { RenameDialog } from "./RenameDialog";
 import { useOthers, useSelf } from "@liveblocks/react/suspense";
+import { motion } from "framer-motion";
+
+const MotionLink = motion(Link);
 
 type ConnectionStatus = "initial" | "connecting" | "connected" | "reconnecting" | "disconnected";
 
@@ -31,19 +34,7 @@ interface BoardHeaderProps {
   hasUnsavedChanges?: boolean;
 }
 
-const saveStatusLabel: Record<SaveStatus, string> = {
-  idle: "",
-  saving: "Saving...",
-  saved: "Saved",
-  error: "Save failed",
-};
 
-const saveStatusTone: Record<SaveStatus, string> = {
-  idle: "text-transparent",
-  saving: "text-muted-foreground",
-  saved: "text-emerald-400",
-  error: "text-destructive",
-};
 
 export function BoardHeader({
   boardId,
@@ -62,113 +53,72 @@ export function BoardHeader({
   onUnshared,
   hasUnsavedChanges = false,
 }: BoardHeaderProps) {
-  const [draftName, setDraftName] = useState(boardName);
-  const [isEditing, setIsEditing] = useState(false);
+  const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
-  const inputRef = useRef<HTMLInputElement | null>(null);
 
-  useEffect(() => {
-    setDraftName(boardName);
-  }, [boardName]);
 
-  useEffect(() => {
-    if (isEditing) {
-      inputRef.current?.focus();
-      inputRef.current?.select();
-    }
-  }, [isEditing]);
-
-  const handleRename = async () => {
-    const trimmed = draftName.trim();
-
-    setIsEditing(false);
-
-    if (!trimmed) {
-      setDraftName(boardName);
-      return;
-    }
-
-    if (trimmed === boardName) {
-      return;
-    }
-
+  const handleRename = async (nextName: string) => {
     setIsRenaming(true);
 
     try {
-      const updated = await boardsApi.rename("", boardId, trimmed);
+      const updated = await boardsApi.rename("", boardId, nextName);
       onBoardNameChange(updated.title);
       toast.success("Board renamed");
     } catch (error) {
-      setDraftName(boardName);
       toast.error(error instanceof Error ? error.message : "Couldn't rename board");
+      throw error; // Re-throw to be caught by the dialog
     } finally {
       setIsRenaming(false);
     }
   };
 
   return (
-    <header className="sketchmind-topbar relative z-10 flex h-14 items-center gap-3 border-b border-border/55 bg-background/72 px-4 backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_28px_-24px_rgba(0,0,0,0.62)] supports-[backdrop-filter]:bg-background/64 supports-[backdrop-filter]:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_28px_-24px_rgba(0,0,0,0.62)] before:pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/[0.04] before:via-transparent before:to-black/[0.03] before:content-['']">
-      <Link
+    <header className="sketchmind-topbar relative z-10 flex h-14 items-center gap-2 sm:gap-3 border-b border-border/55 bg-background/72 px-4 backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_28px_-24px_rgba(0,0,0,0.62)] supports-[backdrop-filter]:bg-background/64 supports-[backdrop-filter]:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_28px_-24px_rgba(0,0,0,0.62)] before:pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/[0.04] before:via-transparent before:to-black/[0.03] before:content-['']">
+      <MotionLink
         to="/dashboard"
         onClick={(e) => {
           if (hasUnsavedChanges && !window.confirm("You have unsaved changes that may be lost. Are you sure you want to leave?")) {
             e.preventDefault();
           }
         }}
-        className="text-sm text-muted-foreground transition-colors hover:text-foreground"
+        whileHover="hover"
+        whileTap="tap"
+        className="group relative flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-border/40 bg-background/40 transition-all hover:border-primary/40 hover:bg-primary/5 hover:shadow-[0_0_15px_-3px_rgba(34,211,238,0.2)]"
+        title="Back to Dashboard"
       >
-        ← Dashboard
-      </Link>
-
-      <span className="text-border">|</span>
+        <motion.div
+          variants={{
+            hover: { x: -2 },
+            tap: { scale: 0.92 }
+          }}
+          transition={{ type: "spring", stiffness: 400, damping: 17 }}
+        >
+          <ArrowLeft className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
+        </motion.div>
+      </MotionLink>
 
       <div className="min-w-0 flex-1">
-        {canEdit && isEditing ? (
-          <Input
-            ref={inputRef}
-            value={draftName}
-            onChange={(event) => setDraftName(event.target.value)}
-            onBlur={() => {
-              void handleRename();
-            }}
-            onKeyDown={(event) => {
-              if (event.key === "Enter") {
-                event.preventDefault();
-                void handleRename();
-              }
+        <button
+          type="button"
+          onClick={() => {
+            if (!canEdit || isRenaming) {
+              return;
+            }
 
-              if (event.key === "Escape") {
-                setDraftName(boardName);
-                setIsEditing(false);
-              }
-            }}
-            maxLength={80}
-            disabled={isRenaming}
-            className="h-9 w-full max-w-sm bg-transparent"
-            aria-label="Board name"
-          />
-        ) : (
-          <button
-            type="button"
-            onClick={() => {
-              if (!canEdit || isRenaming) {
-                return;
-              }
-
-              setIsEditing(true);
-            }}
-            className={cn(
-              "flex max-w-sm items-center gap-2 truncate text-left text-sm font-medium text-foreground",
-              canEdit && "transition-colors hover:text-primary",
-            )}
-            disabled={!canEdit || isRenaming}
-            title={canEdit ? "Rename board" : boardName}
-          >
-            <span className="truncate">{boardName}</span>
-            {canEdit && <PencilLine className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
-          </button>
-        )}
+            setIsRenameDialogOpen(true);
+          }}
+          style={{ maxWidth: "clamp(120px, 50vw, 600px)" }}
+          className={cn(
+            "flex items-center gap-2 truncate text-left text-sm font-medium text-foreground",
+            canEdit && "transition-colors hover:text-primary",
+          )}
+          disabled={!canEdit || isRenaming}
+          title={canEdit ? "Rename board" : boardName}
+        >
+          <span className="truncate">{boardName}</span>
+          {canEdit && <PencilLine className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />}
+        </button>
       </div>
 
       {!isOwner ? (
@@ -187,9 +137,7 @@ export function BoardHeader({
 
 
 
-      <span className={cn("min-w-16 text-right text-xs transition-colors", saveStatusTone[saveStatus])}>
-        {saveStatusLabel[saveStatus]}
-      </span>
+
 
       {/* Connection status indicator */}
       {connectionStatus && (
@@ -228,7 +176,7 @@ export function BoardHeader({
         ) : (
           <Download className="h-3.5 w-3.5" />
         )}
-        <span className="btn-export-label">Export PNG</span>
+        <span className="hidden md:inline">Export PNG</span>
       </Button>
 
       {/* Share button — visible only to the board owner */}
@@ -241,7 +189,7 @@ export function BoardHeader({
           title="Share"
         >
           <Share2 className="h-3.5 w-3.5" />
-          <span className="btn-share-label">Share</span>
+          <span className="hidden md:inline">Share</span>
         </Button>
       )}
 
@@ -254,6 +202,15 @@ export function BoardHeader({
         onClose={() => setIsShareModalOpen(false)}
         onShared={onShared}
         onUnshared={onUnshared}
+      />
+
+      {/* Rename modal */}
+      <RenameDialog
+        boardId={boardId}
+        currentName={boardName}
+        isOpen={isRenameDialogOpen}
+        onClose={() => setIsRenameDialogOpen(false)}
+        onRename={handleRename}
       />
     </header>
   );

@@ -8,6 +8,8 @@ import { useBoardAutoSave } from "@/hooks/useBoardAutoSave";
 import { useDocumentTheme } from "@/hooks/useDocumentTheme";
 import type { CanvasData } from "@/types/canvas";
 
+import { SaveStatusIcon } from "@/components/board/SaveStatusIcon";
+
 type BoardRole = "owner" | "editor" | "viewer";
 
 interface BoardCanvasProps {
@@ -51,6 +53,7 @@ export function BoardCanvas({
     boardId,
     debounceMs: 2000,
   });
+
 
   useEffect(() => {
     document.title = `Sketchmind - ${currentBoardName}`;
@@ -149,6 +152,8 @@ export function BoardCanvas({
           theme={theme}
         />
       </div>
+
+      <SaveStatusIcon status={saveStatus} />
     </div>
   );
 }

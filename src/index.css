@@ -1738,7 +1738,7 @@
   display: none !important;
 }
 
-@media (min-width: 640px) and (max-width: 1023px) {
+@media (min-width: 731px) and (max-width: 1023px) {
 
   #sketchmind-canvas-wrapper .App-menu_top,
   #sketchmind-canvas-wrapper .layer-ui__wrapper__top-right {
@@ -1822,7 +1822,7 @@
   }
 }
 
-@media (max-width: 639px) {
+@media (max-width: 730px) {
   #sketchmind-canvas-wrapper {
     padding-bottom: calc(var(--sketchmind-bottom-safe-space) + 16px);
   }
@@ -2339,7 +2339,7 @@
   margin-left: 6px !important;
 }
 
-@media (max-width: 639px) {
+@media (max-width: 730px) {
 
   #sketchmind-canvas-wrapper .popover:has(.properties-content),
   .sketchmind-canvas .popover:has(.properties-content),
@@ -2369,7 +2369,7 @@
   }
 }
 
-@media (max-width: 639px) {
+@media (max-width: 730px) {
   #sketchmind-canvas-wrapper .Stack.Stack_horizontal.App-toolbar-container>.Island.App-toolbar.App-toolbar--mobile {
     background: var(--sketchmind-toolbar-bg) !important;
     border: 1px solid var(--sketchmind-toolbar-border) !important;
@@ -2537,7 +2537,7 @@
   }
 }
 
-@media (max-width: 639px) {
+@media (max-width: 730px) {
 
   /* Fix 3: Top Bar */
   .sketchmind-topbar .btn-export-label,
