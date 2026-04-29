@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { ArrowLeft, Download, LoaderCircle, PencilLine, Share2, Users } from "lucide-react";
+import { Link, useNavigate } from "react-router-dom";
+import { ArrowLeft, Download, LoaderCircle, PencilLine, Share2 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -53,6 +53,7 @@ export function BoardHeader({
   onUnshared,
   hasUnsavedChanges = false,
 }: BoardHeaderProps) {
+  const navigate = useNavigate();
   const [isRenameDialogOpen, setIsRenameDialogOpen] = useState(false);
   const [isRenaming, setIsRenaming] = useState(false);
   const [isShareModalOpen, setIsShareModalOpen] = useState(false);
@@ -75,12 +76,13 @@ export function BoardHeader({
 
   return (
     <header className="sketchmind-topbar relative z-10 flex h-14 items-center gap-2 sm:gap-3 border-b border-border/55 bg-background/72 px-4 backdrop-blur-2xl backdrop-saturate-150 shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_28px_-24px_rgba(0,0,0,0.62)] supports-[backdrop-filter]:bg-background/64 supports-[backdrop-filter]:shadow-[inset_0_1px_0_rgba(255,255,255,0.08),0_10px_28px_-24px_rgba(0,0,0,0.62)] before:pointer-events-none before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/[0.04] before:via-transparent before:to-black/[0.03] before:content-['']">
-      <MotionLink
-        to="/dashboard"
-        onClick={(e) => {
+      <motion.button
+        type="button"
+        onClick={() => {
           if (hasUnsavedChanges && !window.confirm("You have unsaved changes that may be lost. Are you sure you want to leave?")) {
-            e.preventDefault();
+            return;
           }
+          navigate("/dashboard");
         }}
         whileHover="hover"
         whileTap="tap"
@@ -96,7 +98,7 @@ export function BoardHeader({
         >
           <ArrowLeft className="h-4 w-4 text-muted-foreground transition-colors group-hover:text-primary" />
         </motion.div>
-      </MotionLink>
+      </motion.button>
 
       <div className="min-w-0 flex-1">
         <button
@@ -121,11 +123,7 @@ export function BoardHeader({
         </button>
       </div>
 
-      {!isOwner ? (
-        <span className="shrink-0 inline-flex items-center gap-1 rounded-md bg-violet-500/20 px-1.5 py-0.5 text-[10px] font-medium uppercase tracking-wide text-violet-300 shadow-[0_0_10px_-2px_rgba(139,92,246,0.4)] border border-violet-500/20 transition-all">
-          <Users className="h-2.5 w-2.5" /> Editor
-        </span>
-      ) : null}
+
 
       {!canEdit && (
         <span className="rounded-md border border-border bg-accent/60 px-2 py-1 text-[11px] uppercase tracking-wide text-muted-foreground">

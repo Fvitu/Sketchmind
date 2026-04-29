@@ -121,7 +121,7 @@ export function ShareDialog({ boardId, boardName, isOpen, isShared, onClose, onS
 						✕
 					</button>
 
-					<h2 className="mb-1 text-base font-semibold text-card-foreground">Share "{boardName}"</h2>
+					<h2 className="mb-1 pr-8 text-base font-semibold text-card-foreground truncate" title={`Share "${boardName}"`}>Share "{boardName}"</h2>
 					<p className="mb-5 text-sm text-muted-foreground">
 						{isShared ? "Anyone with this link can join and edit this board." : "Create a shareable link to collaborate with others in real-time."}
 					</p>

@@ -20,5 +20,5 @@ export function initials(name: string): string {
     .filter(Boolean)
     .slice(0, 2)
     .map((p) => p[0]?.toUpperCase() ?? "")
-    .join("") || "S";
+    .join("") || "";
 }

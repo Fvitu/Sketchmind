@@ -4,10 +4,9 @@ import { auth, useAuthUser } from "@/lib/store";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { initials } from "@/lib/format";
+import { UserAvatar } from "@/components/ui/user-avatar";
 import { toast } from "sonner";
-import { Loader2, LogOut } from "lucide-react";
+import { Loader2, LogOut, Save } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Profile = () => {
@@ -144,13 +143,13 @@ const Profile = () => {
 			<div className="rounded-2xl border border-border bg-gradient-card p-6 sm:p-8 shadow-soft">
 				<div className="flex flex-col items-center text-center gap-4">
 					<div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
-						<Avatar className={`h-24 w-24 ring-2 ring-border transition-opacity ${uploadingAvatar ? "opacity-50" : "group-hover:opacity-80"}`}>
-							{user.avatar_url && <AvatarImage src={user.avatar_url} alt={name} className="object-cover" />}
-							<AvatarFallback className="bg-gradient-brand text-primary-foreground text-2xl font-semibold">
-								{initials(name || user.email)}
-							</AvatarFallback>
-						</Avatar>
-						<div className="absolute inset-0 flex items-center justify-center rounded-full bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity">
+						<UserAvatar 
+							src={user.avatar_url} 
+							name={name || user.email} 
+							className={`h-24 w-24 ring-2 ring-border transition-opacity ${uploadingAvatar ? "opacity-50" : "group-hover:opacity-80"}`}
+							fallbackClassName="bg-gradient-brand text-primary-foreground text-2xl font-semibold"
+						/>
+						<div className={`absolute inset-0 flex items-center justify-center rounded-full bg-black/40 transition-opacity ${uploadingAvatar ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
 							{uploadingAvatar ? <Loader2 className="h-6 w-6 text-white animate-spin" /> : <span className="text-white text-xs font-medium">Change</span>}
 						</div>
 						<input 
@@ -170,7 +169,14 @@ const Profile = () => {
 				<form onSubmit={handleSubmit} className="mt-8 space-y-5">
 					<div className="space-y-2">
 						<Label htmlFor="name">Display name</Label>
-						<Input id="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder="Alex Student" />
+						<Input 
+							id="name" 
+							value={name} 
+							onChange={(e) => setName(e.target.value)} 
+							maxLength={60} 
+							placeholder="Alex Student" 
+							autoComplete="off" 
+						/>
 					</div>
 
 					<div className="space-y-2">
@@ -180,14 +186,31 @@ const Profile = () => {
 					</div>
 
 					<div className="pt-2 flex justify-center">
-						<Button
+						<motion.button
+							whileHover="hover"
+							whileTap="tap"
 							type="submit"
 							disabled={!dirty || saving}
-							data-reactive-glow
-							className="reactive-glow gap-2 bg-gradient-brand text-primary-foreground hover:opacity-90 disabled:opacity-50 disabled:shadow-none">
-							{saving && <Loader2 className="h-4 w-4 animate-spin" />}
+							data-reactive-glow={dirty && !saving ? true : undefined}
+							className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-gradient-brand text-primary-foreground hover:opacity-90 disabled:shadow-none ${dirty && !saving ? "reactive-glow" : ""}`}
+						>
+							{saving ? (
+								<Loader2 className="h-4 w-4 animate-spin" />
+							) : (
+								<motion.div
+									variants={{
+										hover: { 
+											scale: 1.25, 
+											rotate: -12, 
+											transition: { type: "spring", stiffness: 400, damping: 12 } 
+										},
+									}}
+								>
+									<Save className="h-4 w-4" />
+								</motion.div>
+							)}
 							Save changes
-						</Button>
+						</motion.button>
 					</div>
 				</form>
 
@@ -197,10 +220,21 @@ const Profile = () => {
 							<p className="font-medium text-sm">Sign out</p>
 							<p className="text-xs text-muted-foreground">Sign out of Sketchmind on this device.</p>
 						</div>
-						<Button variant="destructive" className="gap-2" onClick={handleSignOut}>
-							<LogOut className="h-4 w-4" />
+						<motion.button
+							whileHover="hover"
+							whileTap="tap"
+							onClick={handleSignOut}
+							className="inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-destructive text-destructive-foreground hover:bg-destructive/90"
+						>
+							<motion.div
+								variants={{
+									hover: { x: 3, transition: { type: "spring", stiffness: 400, damping: 10 } },
+								}}
+							>
+								<LogOut className="h-4 w-4" />
+							</motion.div>
 							Sign out
-						</Button>
+						</motion.button>
 					</div>
 				</div>
 			</div>

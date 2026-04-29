@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Logo } from "@/components/brand/Logo";
 import { useAuthUser } from "@/lib/store";
 import { cn } from "@/lib/utils";
+import { InstallPrompt } from "@/components/pwa/InstallPrompt";
 
 type NavTab = "dashboard" | "profile";
 
@@ -12,6 +13,8 @@ let lastActiveNavTab: NavTab | null = null;
 
 const navItemClasses =
 	"group/nav relative flex flex-col items-center justify-center p-[6px_16px] sm:p-[6px_20px] transition-colors duration-100 ease-out focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary rounded-full";
+
+const MotionNavLink = motion(NavLink);
 
 export const AppShell = () => {
 	const user = useAuthUser();
@@ -169,10 +172,11 @@ export const AppShell = () => {
 						transition={{ type: "spring", stiffness: 320, damping: 32, mass: 0.85 }}
 					/>
 				)}
-				<NavLink
+				<MotionNavLink
 					ref={dashboardRef}
 					to="/dashboard"
 					aria-label="Boards"
+					whileHover="hover"
 					className={({ isActive }) =>
 						cn(
 							navItemClasses,
@@ -180,18 +184,22 @@ export const AppShell = () => {
 							isActive ? "text-[#22d3ee]" : "text-[rgba(255,255,255,0.45)] hover:text-[rgba(255,255,255,0.7)]",
 						)
 					}>
-					{() => (
-						<>
-							<LayoutGrid className="relative z-10 h-[18px] w-[18px] mb-[3px]" />
-							<span className="relative z-10 text-[10px] font-medium tracking-[0.02em]">Boards</span>
-						</>
-					)}
-				</NavLink>
+					<motion.div
+						variants={{
+							hover: { rotate: 90, scale: 1.1 },
+						}}
+						transition={{ type: "spring", stiffness: 400, damping: 15 }}
+					>
+						<LayoutGrid className="relative z-10 h-[18px] w-[18px] mb-[3px]" />
+					</motion.div>
+					<span className="relative z-10 text-[10px] font-medium tracking-[0.02em]">Boards</span>
+				</MotionNavLink>
 
-				<NavLink
+				<MotionNavLink
 					ref={profileRef}
 					to="/profile"
 					aria-label="Profile"
+					whileHover="hover"
 					className={({ isActive }) =>
 						cn(
 							navItemClasses,
@@ -199,14 +207,20 @@ export const AppShell = () => {
 							isActive ? "text-[#22d3ee]" : "text-[rgba(255,255,255,0.45)] hover:text-[rgba(255,255,255,0.7)]",
 						)
 					}>
-					{() => (
-						<>
-							<UserIcon className="relative z-10 h-[18px] w-[18px] mb-[3px]" />
-							<span className="relative z-10 text-[10px] font-medium tracking-[0.02em]">Profile</span>
-						</>
-					)}
-				</NavLink>
+					<motion.div
+						variants={{
+							hover: { y: -2, scale: 1.1 },
+						}}
+						transition={{ type: "spring", stiffness: 400, damping: 15 }}
+					>
+						<UserIcon className="relative z-10 h-[18px] w-[18px] mb-[3px]" />
+					</motion.div>
+					<span className="relative z-10 text-[10px] font-medium tracking-[0.02em]">Profile</span>
+				</MotionNavLink>
 			</nav>
+
+			{/* PWA install prompt — dashboard only, never in canvas editor */}
+			<InstallPrompt />
 		</div>
 	);
 };

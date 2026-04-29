@@ -46,7 +46,7 @@ export function SaveStatusIcon({ status }: SaveStatusIconProps) {
 						scale: 0.95,
 						transition: { duration: 0.2, ease: "easeIn" },
 					}}
-					className="fixed bottom-24 right-6 z-[9999] sm:bottom-10 sm:right-10 pointer-events-none select-none"
+					className="fixed bottom-24 right-6 z-[9999] min-[731px]:bottom-10 min-[731px]:right-10 pointer-events-none select-none"
 				>
 					<div
 						className={cn(

@@ -8,6 +8,8 @@ interface PresenceAvatarsProps {
 	others: readonly any[];
 }
 
+import { UserAvatar } from "@/components/ui/user-avatar";
+
 function Avatar({
 	name,
 	email,
@@ -31,15 +33,12 @@ function Avatar({
 					}`}
 					style={{ backgroundColor: color, borderColor: color }}
 				>
-					{avatar ? (
-						<img
-							src={avatar}
-							alt={name}
-							className="h-full w-full rounded-full object-cover"
-						/>
-					) : (
-						<span className="select-none">{(name || "?")[0].toUpperCase()}</span>
-					)}
+					<UserAvatar 
+						src={avatar} 
+						name={name} 
+						showInitials={true}
+						className="h-full w-full bg-transparent border-none"
+					/>
 				</button>
 			</PopoverTrigger>
 			<PopoverContent side="bottom" align="center" className="w-64 p-4 shadow-xl z-[200]">
@@ -48,11 +47,12 @@ function Avatar({
 						className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full border-2 text-lg font-semibold text-white shadow-sm"
 						style={{ backgroundColor: color, borderColor: color }}
 					>
-						{avatar ? (
-							<img src={avatar} alt={name} className="h-full w-full rounded-full object-cover" />
-						) : (
-							<span className="select-none">{(name || "?")[0].toUpperCase()}</span>
-						)}
+						<UserAvatar 
+							src={avatar} 
+							name={name} 
+							showInitials={true}
+							className="h-full w-full bg-transparent border-none"
+						/>
 					</div>
 					<div className="flex flex-col min-w-0">
 						<span className="font-semibold text-foreground truncate">{name} {isSelf && "(you)"}</span>

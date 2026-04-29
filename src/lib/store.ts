@@ -141,13 +141,13 @@ export const auth = {
 	getState() {
 		return authSnapshot;
 	},
-	async signInWithEmail(email: string) {
+	async signInWithEmail(email: string, redirect?: string) {
 		const response = await fetch("/api/auth/magic-link", {
 			method: "POST",
 			headers: {
 				"Content-Type": "application/json",
 			},
-			body: JSON.stringify({ email }),
+			body: JSON.stringify({ email, redirect }),
 		});
 
 		const payload = await response.json().catch(() => ({}));

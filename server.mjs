@@ -141,7 +141,7 @@ export async function handleRequest(req, res) {
 		}
 
 		if (url.pathname === "/api/auth/verify-magic-link" && req.method === "GET") {
-			return await handleMagicLinkVerification(url, res);
+			return await handleMagicLinkVerification(req, res, url);
 		}
 
 		if (url.pathname === "/api/auth/register-session" && req.method === "POST") {
@@ -241,6 +241,7 @@ async function handleMagicLinkRequest(req, res) {
 	const ip = req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.headers["x-real-ip"] || req.socket.remoteAddress;
 	const body = await readJson(req);
 	const email = normalizeEmail(body?.email);
+	const redirect = typeof body?.redirect === "string" ? body.redirect : null;
 
 	if (!email) {
 		return json(res, 400, { error: "Enter a valid email address" });
@@ -276,9 +277,32 @@ async function handleMagicLinkRequest(req, res) {
 	emailLimit.count++;
 	emailRateLimit.set(email, emailLimit);
 
-	const token = signMagicToken(email);
+	const rawToken = randomBytes(32).toString("hex");
+	const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+	const expiresAt = new Date(now + 1000 * 60 * 15).toISOString();
+
+	const client = getSupabaseClient();
+
+	// Requirement: Only the last link sent should work.
+	// Invalidate all previous unused links for this email before creating the new one.
+	await client.from("magic_links").update({ used: true }).eq("email", email).eq("used", false);
+
+	const { error: insertError } = await client.from("magic_links").insert({
+		email,
+		token_hash: tokenHash,
+		expires_at: expiresAt,
+	});
+
+	if (insertError) {
+		console.error("[Auth] Failed to store magic link:", insertError.message);
+		return json(res, 500, { error: "Couldn't generate magic link" });
+	}
+
 	const loginUrl = new URL("/login", runtimeConfig.siteUrl);
-	loginUrl.searchParams.set("magic_token", token);
+	loginUrl.searchParams.set("magic_token", rawToken);
+	if (redirect) {
+		loginUrl.searchParams.set("redirect", redirect);
+	}
 	const emailContent = buildMagicLinkEmail({
 		url: loginUrl.href,
 		host: loginUrl.host,
@@ -310,17 +334,40 @@ async function handleMagicLinkRequest(req, res) {
 	return json(res, 200, { ok: true });
 }
 
-async function handleMagicLinkVerification(url, res) {
-	const token = url.searchParams.get("token");
-	if (!token) {
+async function handleMagicLinkVerification(req, res, url) {
+	const rawToken = url.searchParams.get("token");
+	if (!rawToken) {
 		return json(res, 400, { error: "Missing magic link token" });
 	}
 
-	const email = verifyMagicToken(token);
-	if (!email) {
-		return json(res, 401, { error: "Magic link is invalid or expired" });
+	const tokenHash = createHash("sha256").update(rawToken).digest("hex");
+	const client = getSupabaseClient();
+
+	// Requirement: Each link can only be used once.
+	// Requirement: Only within 15-minute window.
+	const { data: link, error: fetchError } = await client
+		.from("magic_links")
+		.select("*")
+		.eq("token_hash", tokenHash)
+		.eq("used", false)
+		.gt("expires_at", new Date().toISOString())
+		.maybeSingle();
+
+	if (fetchError || !link) {
+		const ip = req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.headers["x-real-ip"] || req.socket.remoteAddress;
+		await logSecurityEvent("magic_link_verification_failed", ip, { token_hash: tokenHash });
+		return json(res, 401, { error: "Magic link is invalid, expired, or already used" });
 	}
 
+	// Requirement: Each link can only be used once. Mark as used immediately.
+	const { error: updateError } = await client.from("magic_links").update({ used: true }).eq("id", link.id);
+
+	if (updateError) {
+		console.error("[Auth] Failed to mark magic link as used:", updateError.message);
+		// We continue anyway as we have the email, but this should be logged.
+	}
+
+	const email = link.email;
 	const identity = {
 		id: createHash("sha256").update(email).digest("hex"),
 		email,
@@ -704,29 +751,35 @@ async function persistUserProfile(identity) {
 	const now = new Date().toISOString();
 
 	const existing = await getUserProfileByEmail(identity.email);
-	let finalAvatarUrl = identity.avatar_url;
+	const userId = existing ? existing.id : identity.id;
+	let finalAvatarUrl = existing?.avatar_url || identity.avatar_url;
 
-	const needsAvatarUpload =
-		identity.avatar_url && (!existing || !existing.avatar_url || existing.avatar_url.includes("lh3.googleusercontent.com"));
+	// Only upload if we don't have an avatar or if the current one is an external Google URL
+	const isCurrentGoogle = finalAvatarUrl?.includes("googleusercontent.com");
+	const needsAvatarUpload = identity.avatar_url && (!finalAvatarUrl || isCurrentGoogle);
 
 	if (needsAvatarUpload) {
-		const uploadedUrl = await uploadAvatarToSupabase(identity.id, identity.avatar_url);
+		const uploadedUrl = await uploadAvatarToSupabase(userId, identity.avatar_url);
 		if (uploadedUrl) {
 			finalAvatarUrl = uploadedUrl;
 		}
-	} else if (existing && existing.avatar_url && !existing.avatar_url.includes("lh3.googleusercontent.com")) {
-		finalAvatarUrl = existing.avatar_url;
 	}
 
 	if (existing) {
+		const updateFields = {
+			email: identity.email,
+			avatar_url: finalAvatarUrl,
+			updated_at: now,
+		};
+
+		// Only overwrite display name if it's currently empty or generic
+		if (!existing.display_name || existing.display_name === "Student") {
+			updateFields.display_name = identity.display_name;
+		}
+
 		const { data, error } = await client
 			.from("profiles")
-			.update({
-				email: identity.email,
-				display_name: identity.display_name,
-				avatar_url: finalAvatarUrl,
-				updated_at: now,
-			})
+			.update(updateFields)
 			.eq("id", existing.id)
 			.select("*")
 			.single();
@@ -755,14 +808,19 @@ async function persistUserProfile(identity) {
 		if (error?.code === "23505") {
 			const fallback = await getUserProfileByEmail(identity.email);
 			if (fallback) {
+				const updateFields = {
+					email: identity.email,
+					avatar_url: finalAvatarUrl,
+					updated_at: now,
+				};
+
+				if (!fallback.display_name || fallback.display_name === "Student") {
+					updateFields.display_name = identity.display_name;
+				}
+
 				const { data: updatedData, error: updateError } = await client
 					.from("profiles")
-					.update({
-						email: identity.email,
-						display_name: identity.display_name,
-						avatar_url: finalAvatarUrl,
-						updated_at: now,
-					})
+					.update(updateFields)
 					.eq("id", fallback.id)
 					.select("*")
 					.single();
@@ -781,8 +839,15 @@ async function persistUserProfile(identity) {
 
 async function uploadAvatarToSupabase(userId, sourceUrl) {
 	try {
-		const response = await fetch(sourceUrl);
-		if (!response.ok) return null;
+		const response = await fetch(sourceUrl, {
+			headers: {
+				"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+			},
+		});
+		if (!response.ok) {
+			console.warn(`[Avatar] Failed to fetch source avatar from ${sourceUrl}: ${response.status}`);
+			return null;
+		}
 		const arrayBuffer = await response.arrayBuffer();
 		const buffer = Buffer.from(arrayBuffer);
 		const contentType = response.headers.get("content-type") || "image/jpeg";
@@ -1742,36 +1807,6 @@ function normalizeEmail(value) {
 	if (typeof value !== "string") return "";
 	const email = value.trim().toLowerCase();
 	return /^\S+@\S+\.\S+$/.test(email) ? email : "";
-}
-
-function signMagicToken(email) {
-	const payload = {
-		email,
-		exp: Date.now() + 1000 * 60 * 15,
-	};
-	const encodedPayload = Buffer.from(JSON.stringify(payload)).toString("base64url");
-	const signature = createHmac("sha256", process.env.AUTH_SECRET).update(encodedPayload).digest("base64url");
-	return `${encodedPayload}.${signature}`;
-}
-
-function verifyMagicToken(token) {
-	if (!process.env.AUTH_SECRET) return null;
-
-	const [encodedPayload, signature] = token.split(".");
-	if (!encodedPayload || !signature) return null;
-
-	const expected = createHmac("sha256", process.env.AUTH_SECRET).update(encodedPayload).digest();
-	const received = Buffer.from(signature, "base64url");
-	if (expected.length !== received.length || !timingSafeEqual(expected, received)) {
-		return null;
-	}
-
-	const payload = JSON.parse(Buffer.from(encodedPayload, "base64url").toString("utf8"));
-	if (typeof payload?.email !== "string" || typeof payload?.exp !== "number" || payload.exp < Date.now()) {
-		return null;
-	}
-
-	return normalizeEmail(payload.email);
 }
 
 function escapeHtml(value) {

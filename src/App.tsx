@@ -12,6 +12,7 @@ import Profile from "./pages/Profile.tsx";
 import BoardPlaceholder from "./pages/BoardPlaceholder.tsx";
 import NotFound from "./pages/NotFound.tsx";
 import JoinBoard from "./pages/JoinBoard.tsx";
+import Offline from "./pages/Offline.tsx";
 import { RequireAuth } from "./components/layout/RequireAuth.tsx";
 import { AppShell } from "./components/layout/AppShell.tsx";
 import { useReactiveGlow } from "./hooks/useReactiveGlow.ts";
@@ -65,6 +66,7 @@ const AnimatedRoutes = () => {
           }
         />
 
+        <Route path="/offline" element={<Offline />} />
         <Route path="*" element={<motion.div {...pageTransition}><NotFound /></motion.div>} />
       </Routes>
     </AnimatePresence>

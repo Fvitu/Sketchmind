@@ -124,4 +124,5 @@ export function RenameDialog({ currentName, isOpen, onClose, onRename }: RenameD
 			)}
 		</AnimatePresence>,
 		document.body,
-ument.body
+	);
+}

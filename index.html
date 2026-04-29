@@ -2,18 +2,48 @@
 <html lang="en" class="dark">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/png" href="/Sketchmind.png" sizes="any" />
-    <link rel="apple-touch-icon" href="/Sketchmind.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+
+    <!-- ── Viewport (with notch / Dynamic Island support) ── -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, minimum-scale=1, maximum-scale=5, viewport-fit=cover" />
+
+    <!-- ── Primary meta ── -->
     <title>Sketchmind</title>
-    <meta name="description" content="Sketchmind is a modern dark-mode whiteboard built for students. Sketch ideas, organize study notes, and map knowledge visually." />
+    <meta name="description" content="A collaborative visual thinking canvas for students and teams. Sketch ideas, organize study notes, and map knowledge visually." />
     <meta name="author" content="Sketchmind" />
 
+    <!-- ── Theme color (dark-only) ── -->
+    <meta name="theme-color" content="#0a0a0a" media="(prefers-color-scheme: dark)" />
+    <meta name="theme-color" content="#0a0a0a" />
+
+    <!-- ── PWA Manifest ── -->
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- ── Favicon / Icons ── -->
+    <link rel="icon" type="image/png" href="/icons/favicon-32x32.png" sizes="32x32" />
+    <link rel="icon" type="image/png" href="/icons/icon-192x192.png" sizes="192x192" />
+    <link rel="icon" type="image/png" href="/icons/icon-512x512.png" sizes="512x512" />
+
+    <!-- ── Apple Web App (iOS "Add to Home Screen") ── -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Sketchmind" />
+    <link rel="apple-touch-icon" href="/icons/apple-touch-icon.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/apple-touch-icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="120x120" href="/icons/apple-touch-icon-120x120.png" />
+
+    <!-- ── Windows / Microsoft tiles ── -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="msapplication-TileColor" content="#0a0a0a" />
+    <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+
+    <!-- ── Open Graph ── -->
     <meta property="og:title" content="Sketchmind — A visual workspace for students" />
     <meta property="og:description" content="A modern collaborative whiteboard for students. Sketch, plan, and map your knowledge visually." />
     <meta property="og:type" content="website" />
     <meta property="og:image" content="/og-image.png" />
 
+    <!-- ── Twitter Card ── -->
     <meta name="twitter:card" content="summary_large_image" />
     <meta name="twitter:image" content="/og-image.png" />
   </head>

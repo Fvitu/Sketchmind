@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import { AnimatePresence, motion } from "framer-motion";
 import { ArrowLeft, Loader2, Mail, MailCheck } from "lucide-react";
 import { toast } from "sonner";
@@ -27,15 +27,29 @@ function parseGoogleStateOrigin(rawState: string | null): string | null {
 
 const Login = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { user, loading: authLoading, runtimeConfig } = useAuthState();
   const [email, setEmail] = useState("");
   const [emailSentTo, setEmailSentTo] = useState("");
   const [emailStage, setEmailStage] = useState<"form" | "sent">("form");
   const [loading, setLoading] = useState<"email" | "google" | "magic" | null>(null);
 
+  // Capture initial redirect target on mount so it's not lost when params are cleared
+  const [redirectTarget] = useState(() => {
+    const params = new URLSearchParams(window.location.search);
+    const fromParam = params.get("redirect");
+    const fromState = (location.state as { from?: string })?.from;
+    const target = fromParam || fromState || "/dashboard";
+    return target.startsWith("/login") ? "/dashboard" : target;
+  });
+
+  const performRedirect = () => {
+    navigate(redirectTarget, { replace: true });
+  };
+
   useEffect(() => {
     if (!authLoading && user) {
-      navigate("/dashboard", { replace: true });
+      performRedirect();
     }
   }, [authLoading, navigate, user]);
 
@@ -55,7 +69,6 @@ const Login = () => {
         .completeMagicLink(magicToken)
         .then(() => {
           toast.success("Signed in");
-          navigate("/dashboard", { replace: true });
         })
         .catch((error) => {
           toast.error(error instanceof Error ? error.message : "Magic link is invalid or expired");
@@ -64,6 +77,7 @@ const Login = () => {
           setLoading(null);
           const nextUrl = new URL(window.location.href);
           nextUrl.searchParams.delete("magic_token");
+          nextUrl.searchParams.delete("redirect");
           window.history.replaceState({}, document.title, nextUrl.pathname + nextUrl.search);
         });
       return;
@@ -99,7 +113,6 @@ const Login = () => {
 		auth.signInWithGoogleCode(code)
 			.then(() => {
 				toast.success("Signed in with Google");
-				navigate("/dashboard", { replace: true });
 			})
 			.catch((error) => {
 				toast.error(error instanceof Error ? error.message : "Couldn't complete Google sign-in");
@@ -124,7 +137,7 @@ const Login = () => {
     setLoading("email");
 
     try {
-      await auth.signInWithEmail(normalizedEmail);
+      await auth.signInWithEmail(normalizedEmail, redirectTarget || undefined);
       setEmailSentTo(normalizedEmail);
       setEmailStage("sent");
       toast.success("Magic link sent. Check your email.");
@@ -141,7 +154,6 @@ const Login = () => {
 		try {
 			await auth.signInWithGoogle();
 			toast.success("Signed in with Google");
-			navigate("/dashboard", { replace: true });
 		} catch (error) {
 			toast.error(error instanceof Error ? error.message : "Couldn't start Google sign-in");
 			setLoading(null);
@@ -233,7 +245,7 @@ const Login = () => {
 											value={email}
 											onChange={(e) => setEmail(e.target.value)}
 											disabled={!!loading}
-											autoComplete="email"
+											autoComplete="off"
 											className="h-11"
 										/>
 									</div>

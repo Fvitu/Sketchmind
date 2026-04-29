@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Link } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { motion } from "framer-motion";
 import { MoreHorizontal, Pencil, Trash2, Lock, Copy, Globe, Users } from "lucide-react";
 import { Board } from "@/lib/store";
@@ -96,6 +96,7 @@ const palettes = [
 ];
 
 export const BoardCard = ({ board, onRename, onDuplicate, onDelete, isActionsActive = false }: Props) => {
+	const navigate = useNavigate();
 	const [open, setOpen] = useState(false);
 	const seed = board.id.charCodeAt(0) + board.id.charCodeAt(board.id.length - 1);
 	const palette = palettes[seed % palettes.length];
@@ -111,14 +112,14 @@ export const BoardCard = ({ board, onRename, onDuplicate, onDelete, isActionsAct
 			transition={{ type: "spring", stiffness: 400, damping: 30, mass: 1 }}
 			whileHover={{ y: -3 }}
 			className="group relative rounded-2xl border border-border bg-gradient-card shadow-soft transition-colors overflow-hidden">
-			<Link to={`/board/${board.id}`} className="block">
+			<div onClick={() => navigate(`/board/${board.id}`)} className="block cursor-pointer">
 				<div className="relative aspect-[16/10] overflow-hidden">
 					<BoardThumbnail board={board} palette={palette} />
 				</div>
-			</Link>
+			</div>
 
 			<div className="flex items-start justify-between gap-2 p-4">
-				<Link to={`/board/${board.id}`} className="min-w-0 flex-1">
+				<div onClick={() => navigate(`/board/${board.id}`)} className="min-w-0 flex-1 cursor-pointer">
 					<h3 className="truncate text-sm font-semibold text-foreground group-hover:text-primary transition-colors">{board.title}</h3>
 					<div className="mt-1 flex items-center gap-2 text-xs text-muted-foreground">
 						<span
@@ -147,7 +148,7 @@ export const BoardCard = ({ board, onRename, onDuplicate, onDelete, isActionsAct
 						<span>·</span>
 						<span>Edited {relativeTime(board.last_edited_at)}</span>
 					</div>
-				</Link>
+				</div>
 
 				<DropdownMenu open={open} onOpenChange={setOpen} modal={false}>
 					<DropdownMenuTrigger asChild>

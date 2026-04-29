@@ -170,7 +170,14 @@ const Profile = () => {
 				<form onSubmit={handleSubmit} className="mt-8 space-y-5">
 					<div className="space-y-2">
 						<Label htmlFor="name">Display name</Label>
-						<Input id="name" value={name} onChange={(e) => setName(e.target.value)} maxLength={60} placeholder="Alex Student" />
+						<Input 
+							id="name" 
+							value={name} 
+							onChange={(e) => setName(e.target.value)} 
+							maxLength={60} 
+							placeholder="Alex Student" 
+							autoComplete="off" 
+						/>
 					</div>
 
 					<div className="space-y-2">
