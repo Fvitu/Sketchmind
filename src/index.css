@@ -96,7 +96,6 @@
 
 	html {
 		overflow-x: clip;
-		scrollbar-gutter: stable;
 	}
 
 	body {
@@ -109,7 +108,36 @@
 	#root {
 		overflow-x: clip;
 	}
+}
 
+/* Premium dark scrollbar */
+@layer base {
+	::-webkit-scrollbar {
+		width: 10px;
+		height: 10px;
+	}
+
+	::-webkit-scrollbar-track {
+		background: hsl(var(--background));
+	}
+
+	::-webkit-scrollbar-thumb {
+		background: hsl(var(--border));
+		border-radius: 5px;
+		border: 2px solid hsl(var(--background));
+	}
+
+	::-webkit-scrollbar-thumb:hover {
+		background: hsl(var(--muted-foreground) / 0.4);
+	}
+
+	* {
+		scrollbar-width: thin;
+		scrollbar-color: hsl(var(--border)) hsl(var(--background));
+	}
+}
+
+@layer base {
 	.font-hand {
 		font-family: "Caveat", "Inter", cursive;
 		letter-spacing: -0.01em;
@@ -390,8 +418,10 @@
 	background-color: transparent;
 }
 
-.Island {
-	max-height: 400px !important;
+@media (max-width: 730px) {
+	.Island {
+		max-height: 400px !important;
+	}
 }
 
 .sketchmind-canvas .buttonList input:checked + label,
@@ -666,12 +696,28 @@
 	gap: 4px;
 }
 
+@media (max-width: 970px) {
+	#root
+		> div
+		> div
+		> div
+		> div
+		> div.excalidraw.excalidraw-container.theme--dark
+		> div.layer-ui__wrapper
+		> div
+		> div
+		> div.Stack.Stack_vertical.App-menu_top__left
+		> section
+		> div {
+		margin-top: 8vh;
+	}
+}
 button[data-sketchmind-mobile-grid-toggle="true"],
 button.ToolIcon {
-	width: 36px !important;
-	height: 36px !important;
-	min-width: 36px !important;
-	min-height: 36px !important;
+	width: 32px !important;
+	height: 32px !important;
+	min-width: 32px !important;
+	min-height: 32px !important;
 	padding: 0 !important;
 	display: flex !important;
 	justify-content: center !important;
@@ -1866,10 +1912,10 @@ button[data-sketchmind-bg-trigger="true"] svg {
 	.sketchmind-canvas .panelColumn .iconSelectList.buttonList button,
 	.sketchmind-canvas .picker[aria-label="arrowhead_start"] .picker-option,
 	.sketchmind-canvas .picker[aria-label="arrowhead_end"] .picker-option {
-		min-width: 40px !important;
-		width: 40px !important;
-		height: 40px !important;
-		min-height: 40px !important;
+		min-width: 32px !important;
+		width: 32px !important;
+		height: 32px !important;
+		min-height: 32px !important;
 	}
 
 	.sketchmind-canvas .panelColumn .FontPicker__container .buttonList button svg,
@@ -2753,4 +2799,13 @@ button[data-sketchmind-bg-trigger="true"] svg {
 	body {
 		overflow-x: hidden;
 	}
+}
+
+.mobile-misc-tools-container {
+	position: fixed !important;
+	top: 50vh !important;
+	transform: translateY(-50%);
+	right: 1rem !important;
+	left: auto !important;
+	margin: 0 !important;
 }

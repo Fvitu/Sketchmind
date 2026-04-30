@@ -51,7 +51,7 @@ const CONTEXT_MENU_DECORATED_ATTRIBUTE = "data-sketchmind-context-menu";
 const CONTEXT_MENU_ICON_CLASS = "sketchmind-context-menu-icon";
 const CONTEXT_MENU_DANGER_ICON_CLASS = "sketchmind-context-menu-icon--danger";
 const CONTEXT_MENU_SEPARATOR_CLASS = "sketchmind-context-menu-separator";
-const HIDDEN_CONTEXT_MENU_PATTERNS = [/^wrap selection in frame$/i, /^add link$/i, /^copy link to object$/i, /^zen mode$/i];
+const HIDDEN_CONTEXT_MENU_PATTERNS = [/^wrap selection in frame$/i, /^add link$/i, /^copy link to object$/i, /^zen mode$/i, /^add to library$/i];
 const INTERACTIVE_CONTEXT_PATCHED_ATTRIBUTE = "data-sketchmind-interactive-context-patched";
 const MOBILE_GRID_TOGGLE_ATTRIBUTE = "data-sketchmind-mobile-grid-toggle";
 const MOBILE_MAIN_MENU_SELECTOR = "button.dropdown-menu-button.main-menu-trigger.zen-mode-transition.dropdown-menu-button--mobile";
@@ -92,6 +92,7 @@ const EXCALIDRAW_UI_OPTIONS = {
 		saveAsImage: false,
 		saveToActiveFile: false,
 		toggleTheme: false,
+		toggleLibrary: false,
 	},
 } as const;
 
@@ -426,6 +427,7 @@ export function ExcalidrawCanvas({ boardId, canEdit, initialCanvasData, onAPIRea
 						restored.appState.currentHoveredFontFamily === 4 ? READABLE_FONT_FAMILY : restored.appState.currentHoveredFontFamily,
 					theme: EXCALIDRAW_THEME,
 					viewBackgroundColor: restored.appState.viewBackgroundColor ?? DEFAULT_BACKGROUND_COLOR,
+					exportWithDarkMode: true,
 					collaborators: new Map(),
 				},
 				scrollToContent: true,
@@ -439,6 +441,7 @@ export function ExcalidrawCanvas({ boardId, canEdit, initialCanvasData, onAPIRea
 				currentItemFontFamily: READABLE_FONT_FAMILY,
 				theme: EXCALIDRAW_THEME,
 				viewBackgroundColor: DEFAULT_BACKGROUND_COLOR,
+				exportWithDarkMode: true,
 				collaborators: new Map(),
 			},
 			scrollToContent: false,
@@ -653,6 +656,7 @@ export function ExcalidrawCanvas({ boardId, canEdit, initialCanvasData, onAPIRea
 		};
 	}, []);
 
+
 	const handleBackgroundColorChange = useCallback(
 		(nextColor: string) => {
 			if (!canEdit) {
@@ -812,6 +816,10 @@ export function ExcalidrawCanvas({ boardId, canEdit, initialCanvasData, onAPIRea
 					});
 					toast.success("Scene restored from file");
 					// Stop propagation if we handled it as a scene
+					event.preventDefault();
+					event.stopPropagation();
+				} else if (contents.type === "application/vnd.excalidrawlib+json") {
+					toast.error("Libraries are disabled in Sketchmind");
 					event.preventDefault();
 					event.stopPropagation();
 				}
@@ -1056,12 +1064,7 @@ export function ExcalidrawCanvas({ boardId, canEdit, initialCanvasData, onAPIRea
 	};
 
 	return (
-		<div 
-			ref={containerRef} 
-			className="sketchmind-canvas relative h-full w-full"
-			onDrop={handleDrop}
-			onDragOver={(e) => e.preventDefault()}
-		>
+		<div ref={containerRef} className="sketchmind-canvas relative h-full w-full" onDrop={handleDrop} onDragOver={(e) => e.preventDefault()}>
 			<style>
 				{`
 					.sketchmind-canvas .HintViewer { display: none !important; }
@@ -1073,17 +1076,15 @@ export function ExcalidrawCanvas({ boardId, canEdit, initialCanvasData, onAPIRea
 					.sketchmind-canvas .layer-ui__wrapper .App-menu_right { display: none !important; }
 					.sketchmind-canvas .layer-ui__wrapper .sidebar-right { display: none !important; }
 					.sketchmind-canvas .layer-ui__wrapper .UserList__wrapper { display: none !important; }
+					.sketchmind-canvas .layer-ui__wrapper .sidebar-trigger { display: none !important; }
+					.sketchmind-canvas .layer-ui__wrapper .sidebar { display: none !important; }
 					.sketchmind-canvas .layer-ui__wrapper { z-index: 100 !important; }
 				`}
 			</style>
 
 			{/* Desktop background picker rendered as usual. Mobile trigger is injected manually. */}
 
-			{!isSmallScreen && (
-				<div className="absolute right-4 top-1/2 z-50 -translate-y-1/2">
-					{renderBackgroundColorPicker(false)}
-				</div>
-			)}
+			{!isSmallScreen && <div className="absolute right-4 top-1/2 z-50 -translate-y-1/2">{renderBackgroundColorPicker(false)}</div>}
 
 			<Excalidraw
 				excalidrawAPI={handleAPIReady}
@@ -1091,7 +1092,6 @@ export function ExcalidrawCanvas({ boardId, canEdit, initialCanvasData, onAPIRea
 				onChange={handleSceneChange}
 				theme={EXCALIDRAW_THEME}
 				viewModeEnabled={!canEdit}
-
 				UIOptions={EXCALIDRAW_UI_OPTIONS}
 			/>
 
@@ -1103,13 +1103,9 @@ export function ExcalidrawCanvas({ boardId, canEdit, initialCanvasData, onAPIRea
 						animate={{ opacity: 1, scale: 1, x: 0, y: "-50%" }}
 						exit={{ opacity: 0, scale: 0.92, x: 10, y: "-50%" }}
 						transition={{ type: "spring", stiffness: 400, damping: 30 }}
-						className="fixed top-1/2 right-4 z-[99999] flex flex-col items-end gap-2"
-					>
+						className="fixed top-1/2 right-20 z-[99999] flex flex-col items-end gap-2">
 						{/* Transparent invisible backdrop for closing without blur/dimming */}
-						<div 
-							className="fixed inset-0 z-[-1]" 
-							onClick={() => setIsMobilePickerOpen(false)}
-						/>
+						<div className="fixed inset-0 z-[-1]" onClick={() => setIsMobilePickerOpen(false)} />
 						<div className="rounded-full border border-white/10 bg-[#0c0c0cf5]/90 p-1 shadow-2xl shadow-black/40 backdrop-blur-xl">
 							{renderBackgroundColorPicker(true)}
 						</div>
@@ -1121,8 +1117,7 @@ export function ExcalidrawCanvas({ boardId, canEdit, initialCanvasData, onAPIRea
 			{!isSmallScreen && hintText && (
 				<div
 					aria-hidden="true"
-					className="pointer-events-none absolute left-1/2 bottom-6 z-50 -translate-x-1/2 rounded-xl px-4 py-2 text-sm text-muted-foreground transition-opacity opacity-100"
-				>
+					className="pointer-events-none absolute left-1/2 bottom-6 z-50 -translate-x-1/2 rounded-xl px-4 py-2 text-sm text-muted-foreground transition-opacity opacity-100">
 					<div className="pointer-events-auto rounded-xl bg-background/70 px-3 py-1 shadow-md backdrop-blur" style={{ textAlign: "center" }}>
 						{hintText}
 					</div>

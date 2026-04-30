@@ -77,7 +77,7 @@ function waitForGoogleTokenFromPopup(popup: Window, allowedOrigins: Set<string>)
 		const monitorClose = window.setInterval(() => {
 			if (popup.closed) {
 				cleanup();
-				reject(new Error("Google sign-in was closed"));
+				reject(new Error("Google sign-in was closed. Please try again."));
 			}
 		}, 250);
 

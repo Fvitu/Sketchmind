@@ -87,12 +87,14 @@ export function BoardCanvas({
     setIsExporting(true);
 
     try {
+      const currentAppState = excalidrawAPI.getAppState();
       const blob = await exportToBlob({
         elements: excalidrawAPI.getSceneElements(),
         appState: {
+          ...currentAppState,
           exportBackground: true,
           exportWithDarkMode: true,
-          viewBackgroundColor: "#0b1120",
+          viewBackgroundColor: currentAppState.viewBackgroundColor ?? "#0b1120",
           exportEmbedScene: true,
           exportPadding: 20,
           exportScale: 2,
