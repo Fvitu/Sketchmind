@@ -30,7 +30,7 @@ export function CollaboratorCursors({ others, excalidrawAPI }: CollaboratorCurso
 
 	return (
 		<div
-			className="pointer-events-none fixed inset-0 z-50 overflow-hidden"
+			className="pointer-events-none fixed top-0 left-0 z-[5]"
 			aria-hidden="true"
 			style={{
 				transformOrigin: "0 0",

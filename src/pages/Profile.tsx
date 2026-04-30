@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { UserAvatar } from "@/components/ui/user-avatar";
 import { toast } from "sonner";
-import { Loader2, LogOut, Save } from "lucide-react";
+import { Loader2, LogOut, Save, Trash2, X } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 
 const Profile = () => {
@@ -15,6 +15,7 @@ const Profile = () => {
   const [name, setName] = useState(user?.display_name ?? "");
   const [saving, setSaving] = useState(false);
   const [uploadingAvatar, setUploadingAvatar] = useState(false);
+  const [removingAvatar, setRemovingAvatar] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -69,6 +70,21 @@ const Profile = () => {
       setUploadingAvatar(false);
       // Reset input
       if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  };
+  
+  const handleRemoveAvatar = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!user.avatar_url) return;
+    
+    setRemovingAvatar(true);
+    try {
+      await auth.updateProfile({ avatar_url: null });
+      toast.success("Avatar removed");
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Couldn't remove avatar");
+    } finally {
+      setRemovingAvatar(false);
     }
   };
 
@@ -144,14 +160,26 @@ const Profile = () => {
 				<div className="flex flex-col items-center text-center gap-4">
 					<div className="relative group cursor-pointer" onClick={() => fileInputRef.current?.click()}>
 						<UserAvatar 
+							key={user.avatar_url || "none"}
 							src={user.avatar_url} 
 							name={name || user.email} 
-							className={`h-24 w-24 ring-2 ring-border transition-opacity ${uploadingAvatar ? "opacity-50" : "group-hover:opacity-80"}`}
+							className={`h-24 w-24 ring-2 ring-border transition-opacity ${uploadingAvatar || removingAvatar ? "opacity-50" : "group-hover:opacity-80"}`}
 							fallbackClassName="bg-gradient-brand text-primary-foreground text-2xl font-semibold"
 						/>
-						<div className={`absolute inset-0 flex items-center justify-center rounded-full bg-black/40 transition-opacity ${uploadingAvatar ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
-							{uploadingAvatar ? <Loader2 className="h-6 w-6 text-white animate-spin" /> : <span className="text-white text-xs font-medium">Change</span>}
+						<div className={`absolute inset-0 flex items-center justify-center rounded-full bg-black/40 transition-opacity ${uploadingAvatar || removingAvatar ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
+							{uploadingAvatar || removingAvatar ? <Loader2 className="h-6 w-6 text-white animate-spin" /> : <span className="text-white text-xs font-medium">Change</span>}
 						</div>
+						
+						{user.avatar_url && !uploadingAvatar && !removingAvatar && (
+							<button
+								onClick={handleRemoveAvatar}
+								className="absolute -top-1 -right-1 p-1 bg-black text-white rounded-full shadow-lg opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-all hover:scale-110 z-10"
+								title="Remove photo"
+							>
+								<X className="h-3 w-3" />
+							</button>
+						)}
+
 						<input 
 							type="file" 
 							ref={fileInputRef} 

@@ -140,6 +140,7 @@ export function BoardCanvas({
 
       <div className="flex-1 w-full overflow-hidden">
         <ExcalidrawCanvas
+          boardId={boardId}
           canEdit={canEdit}
           initialCanvasData={initialCanvasData}
           onAPIReady={(api) => {

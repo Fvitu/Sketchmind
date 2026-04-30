@@ -443,6 +443,8 @@ async function handleProfileUpdate(req, res) {
 	if ("avatar_url" in body) {
 		if (body.avatar_url === null || body.avatar_url === "") {
 			patch.avatar_url = null;
+			// Clean up all avatars for this user
+			void cleanupPreviousAvatars(userId, "");
 		} else if (typeof body.avatar_url === "string") {
 			const avatar = body.avatar_url.trim();
 			if (!/^https?:\/\//i.test(avatar)) {
@@ -1474,14 +1476,26 @@ async function handleBoardShare(req, res, boardId) {
 
 	const client = getSupabaseClient();
 
+	// ── Ownership check: verify board exists and current user is the owner ──
+	// This is performed upfront for all methods so that:
+	//   • Non-owners receive 403 (not 404) — clear and auditable.
+	//   • The board actually existing is confirmed before attempting mutations.
+	const { data: board, error: boardError } = await client
+		.from("boards")
+		.select("id, owner_id, share_token")
+		.eq("id", boardId)
+		.maybeSingle();
+
+	if (boardError || !board) {
+		return json(res, 404, { error: "Board not found" });
+	}
+
+	if (board.owner_id !== userId) {
+		return json(res, 403, { error: "Only the board owner can manage sharing settings" });
+	}
+
 	if (req.method === "GET") {
-		// Get existing share link - owner only
-		const { data: board, error } = await client.from("boards").select("id, owner_id, share_token").eq("id", boardId).eq("owner_id", userId).maybeSingle();
-
-		if (error || !board) {
-			return json(res, 404, { error: "Board not found or not owner" });
-		}
-
+		// Return the existing share link (or null if not yet shared)
 		if (!board.share_token) {
 			return json(res, 200, { token: null, shareUrl: null });
 		}
@@ -1490,17 +1504,15 @@ async function handleBoardShare(req, res, boardId) {
 	}
 
 	if (req.method === "POST") {
-		// Generate share link — owner only
-		const { data: board, error } = await client.from("boards").select("id, owner_id, share_token").eq("id", boardId).eq("owner_id", userId).maybeSingle();
-
-		if (error || !board) {
-			return json(res, 404, { error: "Board not found or not owner" });
-		}
-
+		// Generate a share link (idempotent — reuses existing token if present)
 		let token = board.share_token;
 		if (!token) {
 			token = randomBytes(16).toString("hex");
-			const { error: updateError } = await client.from("boards").update({ share_token: token, visibility: "shared" }).eq("id", boardId);
+			const { error: updateError } = await client
+				.from("boards")
+				.update({ share_token: token, visibility: "shared" })
+				.eq("id", boardId)
+				.eq("owner_id", userId);
 
 			if (updateError) {
 				return json(res, 500, { error: "Failed to generate share token" });
@@ -1511,10 +1523,14 @@ async function handleBoardShare(req, res, boardId) {
 	}
 
 	if (req.method === "DELETE") {
-		// Revoke share link — owner only
-		const { error } = await client.from("boards").update({ share_token: null, visibility: "private" }).eq("id", boardId).eq("owner_id", userId);
+		// Revoke the share link and revert the board to private
+		const { error: revokeError } = await client
+			.from("boards")
+			.update({ share_token: null, visibility: "private" })
+			.eq("id", boardId)
+			.eq("owner_id", userId);
 
-		if (error) {
+		if (revokeError) {
 			return json(res, 500, { error: "Failed to revoke share link" });
 		}
 

@@ -41,7 +41,7 @@ export function CollaboratorSelections({ others, excalidrawAPI }: CollaboratorSe
 	// This ensures ZERO lag during panning and zooming because the entire layer moves with the canvas.
 	return (
 		<div 
-			className="pointer-events-none fixed inset-0 z-40" 
+			className="pointer-events-none fixed top-0 left-0 z-[4]" 
 			aria-hidden="true"
 			style={{
 				transformOrigin: "0 0",

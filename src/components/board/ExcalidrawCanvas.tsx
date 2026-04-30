@@ -37,6 +37,7 @@ import { Button } from "@/components/ui/button";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import type { CanvasData } from "@/types/canvas";
+import { useImageUpload } from "@/hooks/useImageUpload";
 
 const DEFAULT_BACKGROUND_COLOR = "#ffffff";
 const EXCALIDRAW_THEME: Theme = "dark";
@@ -55,7 +56,7 @@ const INTERACTIVE_CONTEXT_PATCHED_ATTRIBUTE = "data-sketchmind-interactive-conte
 const MOBILE_GRID_TOGGLE_ATTRIBUTE = "data-sketchmind-mobile-grid-toggle";
 const MOBILE_MAIN_MENU_SELECTOR = "button.dropdown-menu-button.main-menu-trigger.zen-mode-transition.dropdown-menu-button--mobile";
 const MOBILE_BOTTOM_ACTIONS_SELECTOR = ".App-toolbar-content";
-const MAX_IMAGE_SIZE_BYTES = 2.5 * 1024 * 1024; // 2.5MB per image limit
+const MAX_IMAGE_SIZE_BYTES = 8 * 1024 * 1024; // 8MB per image limit
 
 
 const CONTEXT_MENU_ICON_RULES = [
@@ -355,6 +356,7 @@ function toPickerColor(color: string) {
 }
 
 interface ExcalidrawCanvasProps {
+	boardId: string;
 	canEdit: boolean;
 	initialCanvasData: CanvasData | null;
 	onAPIReady: (api: ExcalidrawImperativeAPI) => void;
@@ -362,7 +364,7 @@ interface ExcalidrawCanvasProps {
 	theme: Theme;
 }
 
-export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onChange, theme: _theme }: ExcalidrawCanvasProps) {
+export function ExcalidrawCanvas({ boardId, canEdit, initialCanvasData, onAPIReady, onChange, theme: _theme }: ExcalidrawCanvasProps) {
 	const containerRef = useRef<HTMLDivElement | null>(null);
 	const [hintText, setHintText] = useState<string | null>(null);
 	const [isGridEnabled, setIsGridEnabled] = useState(false);
@@ -372,6 +374,8 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 	const selectedBackgroundColorRef = useRef(DEFAULT_BACKGROUND_COLOR);
 	const pendingSceneColorRef = useRef<string | null>(null);
 	const [mobileMiscToolsEl, setMobileMiscToolsEl] = useState<HTMLElement | null>(null);
+	const { upload } = useImageUpload(boardId);
+	const uploadingFilesRef = useRef<Set<string>>(new Set());
 
 	useEffect(() => {
 		const container = containerRef.current;
@@ -689,18 +693,20 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 				setSelectedBackgroundColor(sceneBackgroundColor);
 			}
 
-			// Enforce file size limits - remove files that are too large
+			// Handle image uploads: identify files that are local dataURLs and upload them to Supabase.
+			// This keeps the files object small and allows real-time sync via Liveblocks storage.
 			let filteredFiles = files;
 			const largeFileIds = Object.entries(files)
 				.filter(([_, file]) => {
-					// dataURL is base64, so it's roughly 1.33x the binary size
-					// We can approximate the binary size or just limit the dataURL length.
-					// A 2.5MB binary file is ~3.3MB base64.
+					// dataURL is base64, so it's roughly 1.37x the binary size
+					// If it's already a URL, we skip this check (it's already been validated or came from DB)
+					if (!file.dataURL.startsWith("data:")) return false;
 					return file.dataURL.length > MAX_IMAGE_SIZE_BYTES * 1.37;
 				})
 				.map(([id]) => id);
 
 			if (largeFileIds.length > 0) {
+				toast.error("Some images are too large (max 8MB) and will not be saved.");
 				filteredFiles = { ...files };
 				largeFileIds.forEach((id) => {
 					delete (filteredFiles as any)[id];
@@ -709,9 +715,42 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 				// which is an acceptable way to show the limit was exceeded.
 			}
 
+			const filesToUpload = Object.entries(filteredFiles).filter(([id, file]) => {
+				return file.dataURL.startsWith("data:") && !uploadingFilesRef.current.has(id);
+			});
+
+			if (filesToUpload.length > 0 && canEdit) {
+				filesToUpload.forEach(async ([id, file]) => {
+					uploadingFilesRef.current.add(id);
+					try {
+						// Convert dataURL to File/Blob for upload
+						const response = await fetch(file.dataURL);
+						const blob = await response.blob();
+						const imageFile = new File([blob], `image-${id}`, { type: file.mimeType });
+						
+						const url = await upload(imageFile);
+						
+						// Update the scene with the new remote URL.
+						// This will trigger another onChange with the URL, skipping this check next time.
+						excalidrawAPIRef.current?.updateScene({
+							files: {
+								[id]: {
+									...file,
+									dataURL: url,
+								},
+							},
+						});
+					} catch (err) {
+						console.error("[ExcalidrawCanvas] Image upload failed:", err);
+						// Keep it in the uploading set to avoid retry loops, but we might want a timeout
+						// or a retry limit in a production app.
+					}
+				});
+			}
+
 			onChange(elements, appState, filteredFiles);
 		},
-		[onChange],
+		[onChange, upload, canEdit],
 	);
 
 	const handleAPIReady = useCallback(
@@ -1034,6 +1073,7 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 					.sketchmind-canvas .layer-ui__wrapper .App-menu_right { display: none !important; }
 					.sketchmind-canvas .layer-ui__wrapper .sidebar-right { display: none !important; }
 					.sketchmind-canvas .layer-ui__wrapper .UserList__wrapper { display: none !important; }
+					.sketchmind-canvas .layer-ui__wrapper { z-index: 100 !important; }
 				`}
 			</style>
 

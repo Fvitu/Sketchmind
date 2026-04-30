@@ -1,4 +1,5 @@
 // PresenceAvatars — shows avatar circles for all connected users.
+import * as React from "react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useOthers, useSelf } from "@liveblocks/react/suspense";
 import { getUserColor } from "@/lib/colors";
@@ -10,7 +11,7 @@ interface PresenceAvatarsProps {
 
 import { UserAvatar } from "@/components/ui/user-avatar";
 
-function Avatar({
+const Avatar = React.memo(function Avatar({
 	name,
 	email,
 	color,
@@ -28,16 +29,15 @@ function Avatar({
 			<PopoverTrigger asChild>
 				<button
 					type="button"
-					className={`relative flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full border-2 text-xs font-semibold text-white shadow-sm transition-transform hover:scale-110 ${
-						isSelf ? "ring-2 ring-background ring-offset-1" : ""
-					}`}
-					style={{ backgroundColor: color, borderColor: color }}
+					className="relative flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white shadow-sm transition-transform hover:scale-110"
+					style={{ backgroundColor: color }}
 				>
 					<UserAvatar 
 						src={avatar} 
 						name={name} 
 						showInitials={true}
 						className="h-full w-full bg-transparent border-none"
+						fallbackClassName="bg-transparent text-white"
 					/>
 				</button>
 			</PopoverTrigger>
@@ -52,6 +52,7 @@ function Avatar({
 							name={name} 
 							showInitials={true}
 							className="h-full w-full bg-transparent border-none"
+							fallbackClassName="bg-transparent text-white"
 						/>
 					</div>
 					<div className="flex flex-col min-w-0">
@@ -62,9 +63,9 @@ function Avatar({
 			</PopoverContent>
 		</Popover>
 	);
-}
+});
 
-export function PresenceAvatars({ self, others }: PresenceAvatarsProps) {
+export const PresenceAvatars = React.memo(function PresenceAvatars({ self, others }: PresenceAvatarsProps) {
 	const MAX_SHOWN = 4;
 
 	type AvatarEntry = {
@@ -76,7 +77,7 @@ export function PresenceAvatars({ self, others }: PresenceAvatarsProps) {
 		key: string;
 	};
 
-	const allUsers: AvatarEntry[] = [
+	const allUsers: AvatarEntry[] = React.useMemo(() => [
 		...(self?.info
 			? [
 					{
@@ -97,7 +98,7 @@ export function PresenceAvatars({ self, others }: PresenceAvatarsProps) {
 			isSelf: false,
 			key: String(o.connectionId),
 		})),
-	];
+	], [self, others]);
 
 	const shown = allUsers.slice(0, MAX_SHOWN);
 	const overflow = allUsers.length - MAX_SHOWN;
@@ -123,4 +124,4 @@ export function PresenceAvatars({ self, others }: PresenceAvatarsProps) {
 			</div>
 		</div>
 	);
-}
+});

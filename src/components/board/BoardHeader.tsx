@@ -176,19 +176,19 @@ export function BoardHeader({
         <span className="hidden md:inline">Export PNG</span>
       </Button>
 
-      {/* Share button — visible only to the board owner */}
-      {isOwner && (
-        <Button
-          type="button"
-          size="sm"
-          onClick={() => setIsShareModalOpen(true)}
-          className="btn-share shrink-0 gap-2 bg-primary px-2 text-primary-foreground hover:bg-primary/90 sm:px-3"
-          title="Share"
-        >
-          <Share2 className="h-3.5 w-3.5" />
-          <span className="hidden md:inline">Share</span>
-        </Button>
-      )}
+      {/* Share button — always visible; disabled for non-owners */}
+      <Button
+        type="button"
+        size="sm"
+        onClick={() => isOwner && setIsShareModalOpen(true)}
+        disabled={!isOwner}
+        aria-disabled={!isOwner}
+        className="btn-share shrink-0 gap-2 bg-primary px-2 text-primary-foreground hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-50 sm:px-3"
+        title={isOwner ? "Share" : "Only the board owner can share this board"}
+      >
+        <Share2 className="h-3.5 w-3.5" />
+        <span className="hidden md:inline">Share</span>
+      </Button>
 
       {/* Share modal */}
       <ShareDialog
