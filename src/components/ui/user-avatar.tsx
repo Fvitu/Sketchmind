@@ -12,16 +12,18 @@ interface UserAvatarProps extends React.ComponentPropsWithoutRef<typeof Avatar> 
 }
 
 export const UserAvatar = React.forwardRef<
-  React.ElementRef<typeof Avatar>,
+  React.ElementRef<typeof cAvatar>,
   UserAvatarProps
 >(({ src, name, showInitials = true, fallbackClassName, className, ...props }, ref) => {
   return (
     <Avatar ref={ref} className={cn("bg-muted", className)} {...props}>
       {src && (
         <AvatarImage 
+          key={src}
           src={src} 
           alt={name || "User"} 
           className="object-cover" 
+          referrerPolicy="no-referrer"
         />
       )}
       <AvatarFallback className={cn("flex h-full w-full items-center justify-center rounded-full font-medium text-muted-foreground", fallbackClassName)}>

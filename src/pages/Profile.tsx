@@ -185,14 +185,14 @@ const Profile = () => {
 						<p className="text-xs text-muted-foreground">Email comes from your sign-in provider.</p>
 					</div>
 
-					<div className="pt-2 flex justify-center">
+					<div className="pt-2 flex flex-col sm:items-center">
 						<motion.button
 							whileHover="hover"
 							whileTap="tap"
 							type="submit"
 							disabled={!dirty || saving}
 							data-reactive-glow={dirty && !saving ? true : undefined}
-							className={`inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-gradient-brand text-primary-foreground hover:opacity-90 disabled:shadow-none ${dirty && !saving ? "reactive-glow" : ""}`}
+							className={`w-full sm:w-auto inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-gradient-brand text-primary-foreground hover:opacity-90 disabled:shadow-none ${dirty && !saving ? "reactive-glow" : ""}`}
 						>
 							{saving ? (
 								<Loader2 className="h-4 w-4 animate-spin" />

@@ -1,8 +1,10 @@
 import { createElement, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
 import { createPortal } from "react-dom";
-import { Excalidraw, restore } from "@excalidraw/excalidraw";
+import { Excalidraw, restore, loadSceneOrLibraryFromBlob } from "@excalidraw/excalidraw";
 import { HexAlphaColorPicker, HexColorInput } from "react-colorful";
 import { renderToStaticMarkup } from "react-dom/server";
+import { toast } from "sonner";
 import type { AppState, ExcalidrawImperativeAPI, ExcalidrawInitialDataState } from "@excalidraw/excalidraw/types";
 import type { ExcalidrawElement, Theme } from "@excalidraw/excalidraw/element/types";
 import {
@@ -442,7 +444,17 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 	const initialBackgroundColor = initialData.appState?.viewBackgroundColor ?? DEFAULT_BACKGROUND_COLOR;
 
 	const [selectedBackgroundColor, setSelectedBackgroundColor] = useState(normalizeColorInputValue(initialBackgroundColor));
+	const [isMobilePickerOpen, setIsMobilePickerOpen] = useState(false);
 	const [isColorPickerOpen, setIsColorPickerOpen] = useState(false);
+
+	useEffect(() => {
+		if (isSmallScreen) {
+			(window as any).__toggleSketchmindMobileBG = () => setIsMobilePickerOpen((prev) => !prev);
+		}
+		return () => {
+			delete (window as any).__toggleSketchmindMobileBG;
+		};
+	}, [isSmallScreen]);
 
 	useEffect(() => {
 		selectedBackgroundColorRef.current = selectedBackgroundColor;
@@ -732,6 +744,45 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 		});
 	}, []);
 
+	const handleDrop = useCallback(async (event: React.DragEvent<HTMLDivElement>) => {
+		if (!canEdit) return;
+		
+		const file = event.dataTransfer.files[0];
+		if (!file) return;
+
+		const api = excalidrawAPIRef.current;
+		if (!api) return;
+
+		// Check if it's an excalidraw file or if the canvas is empty
+		// In an empty canvas, we try to restore the scene from any dropped image (if it has embedded data)
+		const isExcalidrawFile = file.name.endsWith(".excalidraw") || file.type === "application/vnd.excalidraw+json";
+		const isEmpty = api.getSceneElements().length === 0;
+
+		if (isExcalidrawFile || isEmpty) {
+			try {
+				const contents = await loadSceneOrLibraryFromBlob(file, null, null);
+				if (contents.type === "application/vnd.excalidraw+json") {
+					api.updateScene({
+						elements: contents.data.elements,
+						appState: {
+							...contents.data.appState,
+							viewBackgroundColor: contents.data.appState?.viewBackgroundColor ?? api.getAppState().viewBackgroundColor,
+						},
+						files: contents.data.files,
+						commitToHistory: true,
+					});
+					toast.success("Scene restored from file");
+					// Stop propagation if we handled it as a scene
+					event.preventDefault();
+					event.stopPropagation();
+				}
+			} catch (err) {
+				// Not a scene file, let default behavior handle it (e.g. insert as image)
+				console.log("🎨 Sketchmind: Dropped file is not a scene, falling back to default behavior");
+			}
+		}
+	}, [canEdit]);
+
 	useEffect(() => {
 		const container = containerRef.current;
 
@@ -784,6 +835,41 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 			const topToolbarStack = container.querySelector<HTMLElement>(".App-menu_top .App-toolbar:not(.App-toolbar--mobile) > .Stack");
 			const miscTools = container.querySelector<HTMLElement>(".mobile-misc-tools-container");
 
+			if (miscTools) {
+				let bgPickerBtn = miscTools.querySelector<HTMLElement>("[data-sketchmind-bg-trigger=\"true\"]");
+				if (!bgPickerBtn) {
+					console.log("🎨 Sketchmind: Injecting mobile background trigger");
+					bgPickerBtn = document.createElement("button");
+					bgPickerBtn.type = "button";
+					bgPickerBtn.className = "ToolIcon ToolIcon_size_medium is-mobile";
+					bgPickerBtn.setAttribute("title", "Canvas Background");
+					bgPickerBtn.setAttribute("data-sketchmind-bg-trigger", "true");
+					bgPickerBtn.style.cursor = "pointer";
+					bgPickerBtn.style.background = "none";
+					bgPickerBtn.style.border = "none";
+					bgPickerBtn.style.padding = "0";
+					bgPickerBtn.innerHTML = `
+						<div class="ToolIcon__icon">
+							${renderToStaticMarkup(<Palette className="h-5 w-5" />)}
+						</div>
+					`;
+					miscTools.appendChild(bgPickerBtn);
+				}
+				
+				// Always re-attach or update the handler to be safe
+				bgPickerBtn.onclick = (e) => {
+					e.preventDefault();
+					e.stopPropagation();
+					console.log("🎨 Sketchmind: Mobile background trigger clicked");
+					if ((window as any).__toggleSketchmindMobileBG) {
+						(window as any).__toggleSketchmindMobileBG();
+					}
+				};
+				
+				// Update active state
+				bgPickerBtn.classList.toggle("active", isMobilePickerOpen);
+			}
+
 			if (topToolbarStack && miscTools) {
 				const buttons = Array.from(miscTools.querySelectorAll<HTMLElement>(".ToolIcon"));
 				buttons.forEach((btn) => {
@@ -828,7 +914,7 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 		const swatchesList = (
 			<div
 				className={cn(
-					"flex flex-col gap-2 p-1 shadow-2xl backdrop-blur-2xl",
+					"flex flex-col gap-1.5 p-1 shadow-2xl backdrop-blur-2xl",
 					"rounded-full border border-white/10 bg-[#0c0c0cf5]",
 					isMobile && "items-center",
 				)}>
@@ -839,9 +925,12 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 						title={`Set background ${color}`}
 						aria-label={`Set background ${color}`}
 						disabled={!canEdit}
-						onClick={() => handleBackgroundColorChange(color)}
+						onClick={() => {
+							handleBackgroundColorChange(color);
+							if (isMobile) setIsMobilePickerOpen(false);
+						}}
 						className={cn(
-							"relative h-8 w-8 shrink-0 rounded-full border transition-all duration-200 ease-out",
+							"relative h-[30px] w-[30px] shrink-0 rounded-full border transition-all duration-200 ease-out",
 							!canEdit && "cursor-not-allowed opacity-40",
 							canEdit && "cursor-pointer hover:scale-105 active:scale-95",
 							selectedSwatch === normalizeColorInputValue(color)
@@ -851,7 +940,7 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 						style={{ backgroundColor: color }}>
 						{selectedSwatch === normalizeColorInputValue(color) && (
 							<span className="absolute inset-0 grid place-items-center rounded-full">
-								<Check className="h-3.5 w-3.5 text-white drop-shadow-sm" />
+								<Check className="h-3 w-3 text-white drop-shadow-sm" />
 							</span>
 						)}
 					</button>
@@ -865,7 +954,7 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 							aria-label="Pick custom background color"
 							disabled={!canEdit}
 							className={cn(
-								"relative grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full border border-white/10 bg-[conic-gradient(from_90deg,#7dd3fc,#38bdf8,#0ea5e9,#0284c7,#0369a1,#7dd3fc)] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)] transition-all duration-200 ease-out",
+								"relative grid h-[30px] w-[30px] shrink-0 place-items-center overflow-hidden rounded-full border border-white/10 bg-[conic-gradient(from_90deg,#7dd3fc,#38bdf8,#0ea5e9,#0284c7,#0369a1,#7dd3fc)] text-white shadow-[inset_0_0_0_1px_rgba(255,255,255,0.2)] transition-all duration-200 ease-out",
 								!canEdit && "cursor-not-allowed opacity-40",
 								canEdit && "cursor-pointer hover:scale-105 active:scale-95",
 							)}>
@@ -874,14 +963,14 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 								className="absolute inset-[2.5px] rounded-full border border-white/25"
 								style={{ backgroundColor: selectedBackgroundColor }}
 							/>
-							<Palette className="relative h-3.5 w-3.5 drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" />
+							<Palette className="relative h-3 w-3 drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]" />
 						</button>
 					</PopoverTrigger>
 					<PopoverContent
 						side={isMobile ? "bottom" : "left"}
 						align="center"
 						sideOffset={12}
-						container={mobileMiscToolsEl}
+						container={isMobile ? undefined : mobileMiscToolsEl}
 						className="w-[280px] rounded-[1.25rem] border-white/10 bg-[#0c0c0cf5] p-0 text-foreground shadow-[0_24px_80px_-28px_rgba(0,0,0,0.7),inset_0_1px_0_rgba(255,255,255,0.06)] backdrop-blur-2xl">
 						<div className="space-y-4 p-4">
 							<div className="flex items-center justify-between gap-3">
@@ -924,36 +1013,16 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 			</div>
 		);
 
-		if (!isMobile) {
-			return swatchesList;
-		}
-
-		return (
-			<Popover>
-				<PopoverTrigger asChild>
-					<button
-						type="button"
-						className="ToolIcon ToolIcon_size_medium is-mobile"
-						title="Canvas Background"
-						aria-label="Canvas Background">
-						<div className="ToolIcon__icon">
-							<Palette className="h-5 w-5" />
-						</div>
-					</button>
-				</PopoverTrigger>
-				<PopoverContent
-					side="bottom"
-					align="center"
-					sideOffset={14}
-					className="w-auto border-none bg-transparent p-0 shadow-none">
-					{swatchesList}
-				</PopoverContent>
-			</Popover>
-		);
+		return swatchesList;
 	};
 
 	return (
-		<div ref={containerRef} className="sketchmind-canvas relative h-full w-full">
+		<div 
+			ref={containerRef} 
+			className="sketchmind-canvas relative h-full w-full"
+			onDrop={handleDrop}
+			onDragOver={(e) => e.preventDefault()}
+		>
 			<style>
 				{`
 					.sketchmind-canvas .HintViewer { display: none !important; }
@@ -968,7 +1037,7 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 				`}
 			</style>
 
-			{isSmallScreen && mobileMiscToolsEl && createPortal(renderBackgroundColorPicker(true), mobileMiscToolsEl)}
+			{/* Desktop background picker rendered as usual. Mobile trigger is injected manually. */}
 
 			{!isSmallScreen && (
 				<div className="absolute right-4 top-1/2 z-50 -translate-y-1/2">
@@ -985,6 +1054,28 @@ export function ExcalidrawCanvas({ canEdit, initialCanvasData, onAPIReady, onCha
 
 				UIOptions={EXCALIDRAW_UI_OPTIONS}
 			/>
+
+			{/* Mobile Color Picker Overlay - Positioned in the middle of the screen on the right */}
+			<AnimatePresence>
+				{isSmallScreen && isMobilePickerOpen && (
+					<motion.div
+						initial={{ opacity: 0, scale: 0.92, x: 10, y: "-50%" }}
+						animate={{ opacity: 1, scale: 1, x: 0, y: "-50%" }}
+						exit={{ opacity: 0, scale: 0.92, x: 10, y: "-50%" }}
+						transition={{ type: "spring", stiffness: 400, damping: 30 }}
+						className="fixed top-1/2 right-4 z-[99999] flex flex-col items-end gap-2"
+					>
+						{/* Transparent invisible backdrop for closing without blur/dimming */}
+						<div 
+							className="fixed inset-0 z-[-1]" 
+							onClick={() => setIsMobilePickerOpen(false)}
+						/>
+						<div className="rounded-full border border-white/10 bg-[#0c0c0cf5]/90 p-1 shadow-2xl shadow-black/40 backdrop-blur-xl">
+							{renderBackgroundColorPicker(true)}
+						</div>
+					</motion.div>
+				)}
+			</AnimatePresence>
 
 			{/* Bottom-center hint bar that mirrors Excalidraw hints - Hidden on mobile to avoid blocking interactions */}
 			{!isSmallScreen && hintText && (

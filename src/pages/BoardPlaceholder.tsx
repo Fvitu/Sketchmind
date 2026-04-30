@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { boards as boardsApi } from "@/lib/store";
+import { boards as boardsApi, useAuthUser } from "@/lib/store";
 import { LiveblocksRoom } from "@/components/board/LiveblocksRoom";
 import { BoardCanvas } from "@/components/board/BoardCanvas";
 import type { CanvasData } from "@/types/canvas";
@@ -10,6 +10,7 @@ import { LoadingScreen } from "@/components/ui/LoadingScreen";
 const BoardPlaceholder = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const user = useAuthUser();
   const [status, setStatus] = useState<"loading" | "ready" | "missing">("loading");
   const [board, setBoard] = useState<Awaited<ReturnType<typeof boardsApi.get>>>(null);
 
@@ -65,13 +66,16 @@ const BoardPlaceholder = () => {
     return <LoadingScreen message="Loading board..." />;
   }
 
+  // Robust role detection: trust the API first, then fallback to ownership check, then default to viewer.
+  const role = board.role || (user && board.owner_id === user.id ? "owner" : "viewer");
+
   if (board.visibility === "shared") {
     return (
       <LiveblocksRoom
         boardId={board.id}
         boardName={board.title}
         initialCanvasData={board.canvas_state as CanvasData | null}
-        role={board.role ?? "owner"}
+        role={role}
         onUnshared={() => setBoard({ ...board, visibility: "private" })}
       />
     );
@@ -82,7 +86,7 @@ const BoardPlaceholder = () => {
       boardId={board.id}
       boardName={board.title}
       initialCanvasData={board.canvas_state as CanvasData | null}
-      role={board.role ?? "owner"}
+      role={role}
       onShared={() => setBoard({ ...board, visibility: "shared" })}
       onUnshared={() => setBoard({ ...board, visibility: "private" })}
     />

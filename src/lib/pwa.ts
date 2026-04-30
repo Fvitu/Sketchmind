@@ -12,11 +12,9 @@ const listeners = new Set<(prompt: any) => void>();
 
 if (typeof window !== 'undefined') {
   window.addEventListener('beforeinstallprompt', (e) => {
-    // Prevent the mini-infobar from appearing on mobile
+    console.log('📬 PWA: beforeinstallprompt event captured');
     e.preventDefault();
-    // Stash the event so it can be triggered later.
     deferredPrompt = e;
-    // Notify all active listeners
     listeners.forEach((l) => l(e));
   });
 }

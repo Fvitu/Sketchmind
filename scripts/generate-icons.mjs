@@ -16,16 +16,25 @@ const iconsDir = path.join(root, 'public', 'icons');
 
 mkdirSync(iconsDir, { recursive: true });
 
-// ── Standard icons (logo fills the full canvas) ──────────────────────────────
+// ── Brand Colors ─────────────────────────────────────────────────────────────
+const BRAND_BLUE = { r: 34, g: 211, b: 238 }; // #22d3ee (Matches primary brand cyan)
+const DARK_BG    = { r: 10, g: 10, b: 10 };    // #0a0a0a (Matches app theme)
+
+// ── Standard icons (Android Deck - NO BORDERS) ───────────────────────────────
 const sizes = [72, 96, 128, 144, 152, 180, 192, 384, 512];
 
 for (const size of sizes) {
   const outPath = path.join(iconsDir, `icon-${size}x${size}.png`);
-  await sharp(src).resize(size, size, { fit: 'contain', background: { r: 10, g: 10, b: 10, alpha: 1 } }).png().toFile(outPath);
+  // Use 'cover' to ensure the logo fills the entire square and eliminates white borders
+  await sharp(src)
+    .resize(size, size, { fit: 'cover' })
+    .flatten({ background: DARK_BG })
+    .png()
+    .toFile(outPath);
   console.log(`✓ icon-${size}x${size}.png`);
 }
 
-// ── Apple touch icons ─────────────────────────────────────────────────────────
+// ── Apple touch icons (Should have no transparency) ──────────────────────────
 const appleSizes = [
   { size: 180, name: 'apple-touch-icon.png' },
   { size: 152, name: 'apple-touch-icon-152x152.png' },
@@ -33,25 +42,29 @@ const appleSizes = [
 ];
 for (const { size, name } of appleSizes) {
   const outPath = path.join(iconsDir, name);
-  await sharp(src).resize(size, size, { fit: 'contain', background: { r: 10, g: 10, b: 10, alpha: 1 } }).png().toFile(outPath);
+  await sharp(src)
+    .resize(size, size, { fit: 'cover' })
+    .flatten({ background: DARK_BG })
+    .png()
+    .toFile(outPath);
   console.log(`✓ ${name}`);
 }
 
-// ── Maskable icons (logo at 80%, brand bg fills safe-zone padding) ────────────
+// ── Maskable icons (Home Screen - Full Brand Blue) ────────────────────────────
 for (const size of [192, 512]) {
-  const logoSize = Math.round(size * 0.8);
-  const padding  = Math.round(size * 0.1);
+  const logoSize = Math.round(size * 0.85);
+  const offset   = Math.round((size - logoSize) / 2);
 
   const logoBuffer = await sharp(src)
-    .resize(logoSize, logoSize, { fit: 'contain', background: { r: 10, g: 10, b: 10, alpha: 0 } })
+    .resize(logoSize, logoSize, { fit: 'contain', background: { ...BRAND_BLUE, alpha: 0 } })
     .png()
     .toBuffer();
 
   const outPath = path.join(iconsDir, `icon-maskable-${size}x${size}.png`);
   await sharp({
-    create: { width: size, height: size, channels: 4, background: { r: 10, g: 10, b: 10, alpha: 1 } },
+    create: { width: size, height: size, channels: 4, background: { ...BRAND_BLUE, alpha: 1 } },
   })
-    .composite([{ input: logoBuffer, top: padding, left: padding }])
+    .composite([{ input: logoBuffer, top: offset, left: offset }])
     .png()
     .toFile(outPath);
   console.log(`✓ icon-maskable-${size}x${size}.png`);
@@ -59,12 +72,12 @@ for (const size of [192, 512]) {
 
 // ── Shortcut icons ────────────────────────────────────────────────────────────
 for (const name of ['shortcut-new.png', 'shortcut-boards.png']) {
-  await sharp(src).resize(96, 96, { fit: 'contain', background: { r: 10, g: 10, b: 10, alpha: 1 } }).png().toFile(path.join(iconsDir, name));
+  await sharp(src).resize(96, 96, { fit: 'contain', background: { ...DARK_BG, alpha: 0 } }).flatten({ background: DARK_BG }).png().toFile(path.join(iconsDir, name));
   console.log(`✓ ${name}`);
 }
 
 // ── 32×32 favicon ─────────────────────────────────────────────────────────────
-await sharp(src).resize(32, 32, { fit: 'contain', background: { r: 10, g: 10, b: 10, alpha: 1 } }).png().toFile(path.join(iconsDir, 'favicon-32x32.png'));
+await sharp(src).resize(32, 32, { fit: 'contain', background: { ...DARK_BG, alpha: 0 } }).flatten({ background: DARK_BG }).png().toFile(path.join(iconsDir, 'favicon-32x32.png'));
 console.log('✓ favicon-32x32.png');
 
-console.log('\n🎉 All PWA icons generated from Sketchmind.png!');
+console.log('\n🎉 All PWA icons generated with NO BORDERS for Android!');

@@ -100,7 +100,7 @@ export function BoardHeader({
         </motion.div>
       </motion.button>
 
-      <div className="min-w-0 flex-1">
+      <div className="min-w-0 flex-[1_1_0%] overflow-hidden">
         <button
           type="button"
           onClick={() => {
@@ -110,9 +110,8 @@ export function BoardHeader({
 
             setIsRenameDialogOpen(true);
           }}
-          style={{ maxWidth: "clamp(120px, 50vw, 600px)" }}
           className={cn(
-            "flex items-center gap-2 truncate text-left text-sm font-medium text-foreground",
+            "flex w-full items-center gap-2 truncate text-left text-sm font-medium text-foreground",
             canEdit && "transition-colors hover:text-primary",
           )}
           disabled={!canEdit || isRenaming}
@@ -166,7 +165,7 @@ export function BoardHeader({
         size="sm"
         onClick={onExportPNG}
         disabled={isExporting}
-        className="btn-export gap-2"
+        className="btn-export shrink-0 gap-2 px-2 sm:px-3"
         title="Export PNG"
       >
         {isExporting ? (
@@ -183,7 +182,7 @@ export function BoardHeader({
           type="button"
           size="sm"
           onClick={() => setIsShareModalOpen(true)}
-          className="btn-share gap-2 bg-primary text-primary-foreground hover:bg-primary/90"
+          className="btn-share shrink-0 gap-2 bg-primary px-2 text-primary-foreground hover:bg-primary/90 sm:px-3"
           title="Share"
         >
           <Share2 className="h-3.5 w-3.5" />

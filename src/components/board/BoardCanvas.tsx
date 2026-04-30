@@ -90,19 +90,16 @@ export function BoardCanvas({
       const blob = await exportToBlob({
         elements: excalidrawAPI.getSceneElements(),
         appState: {
-          ...excalidrawAPI.getAppState(),
           exportBackground: true,
-          exportWithDarkMode: theme === "dark",
-          viewBackgroundColor: theme === "dark" ? "#0b1120" : "#ffffff",
+          exportWithDarkMode: true,
+          viewBackgroundColor: "#0b1120",
+          exportEmbedScene: true,
+          exportPadding: 20,
+          exportScale: 2,
         },
         files: excalidrawAPI.getFiles(),
         mimeType: "image/png",
         quality: 1,
-        getDimensions: (width, height) => ({
-          width,
-          height,
-          scale: 2,
-        }),
       });
 
       const url = URL.createObjectURL(blob);

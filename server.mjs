@@ -505,7 +505,7 @@ async function handleProfileAvatarUpload(req, res) {
 	}
 
 	const extension = safeFileExtension(file);
-	const storagePath = `${userId}/avatar.${extension}`;
+	const storagePath = `${userId}/avatar-${Date.now()}.${extension}`;
 	const buffer = Buffer.from(await file.arrayBuffer());
 	const ip = req.headers["x-forwarded-for"]?.split(",")[0].trim() || req.headers["x-real-ip"] || req.socket.remoteAddress;
 
@@ -516,6 +516,7 @@ async function handleProfileAvatarUpload(req, res) {
 	}
 
 	const client = getSupabaseClient();
+	
 	const { error: uploadError } = await client.storage.from("avatars").upload(storagePath, buffer, {
 		contentType: file.type,
 		upsert: true,
@@ -542,7 +543,12 @@ async function handleProfileAvatarUpload(req, res) {
 		throw new HttpError(500, userFacingDatabaseError(dbError.message));
 	}
 
+	if (!profileData) {
+		return json(res, 404, { error: "User profile not found in database" });
+	}
+
 	const mappedUser = await mapUserRow(profileData);
+	
 	return json(res, 200, {
 		user: mappedUser,
 		url: mappedUser.avatar_url,
@@ -845,7 +851,6 @@ async function uploadAvatarToSupabase(userId, sourceUrl) {
 			},
 		});
 		if (!response.ok) {
-			console.warn(`[Avatar] Failed to fetch source avatar from ${sourceUrl}: ${response.status}`);
 			return null;
 		}
 		const arrayBuffer = await response.arrayBuffer();
@@ -858,7 +863,7 @@ async function uploadAvatarToSupabase(userId, sourceUrl) {
 		if (contentType.includes("gif")) ext = "gif";
 
 		const client = getSupabaseClient();
-		const path = `${userId}/avatar.${ext}`;
+		const path = `${userId}/avatar-${Date.now()}.${ext}`;
 
 		const { error: uploadError } = await client.storage.from("avatars").upload(path, buffer, {
 			contentType,
@@ -1237,24 +1242,32 @@ async function getBoardAccessForUser(userId, boardId) {
 async function mapUserRow(row) {
 	let avatarUrl = row.avatar_url;
 
-	// Replace permanent URLs with signed URLs
-	if (avatarUrl && avatarUrl.includes("/storage/v1/object/public/avatars/")) {
+	// Generate long-lived signed URLs for avatars to ensure visibility even if buckets are private.
+	// We use 1 week (604800s) to cover long collaborative sessions while maintaining security.
+	// Support both public and private storage URL patterns
+	// Support both public and private storage URL patterns
+	if (avatarUrl && typeof avatarUrl === "string" && (avatarUrl.includes(".supabase.co") || avatarUrl.includes("/storage/v1/object/"))) {
 		try {
-			// Strip query parameters for the storage path
-			const urlWithoutQuery = avatarUrl.split("?")[0];
-			const path = urlWithoutQuery.split("/avatars/").pop();
+			// Extract bucket and path from URL
+			// Pattern: .../object/(public|authenticated)/avatars/(PATH)
+			const storageMatch = avatarUrl.match(/\/storage\/v1\/object\/(?:public|authenticated)\/([^\/]+)\/(.+)$/i);
+			
+			if (storageMatch) {
+				const bucket = storageMatch[1];
+				const path = decodeURIComponent(storageMatch[2]).split("?")[0];
 
-			if (path) {
-				const client = getSupabaseClient();
-				const { data, error } = await client.storage.from("avatars").createSignedUrl(path, 3600); // 1-hour expiry
-				if (error) {
-					console.error("[Security] Supabase error generating signed URL:", error.message);
-				} else if (data?.signedUrl) {
-					avatarUrl = data.signedUrl;
+				if (bucket === "avatars") {
+					const client = getSupabaseClient();
+					// Generate signed URL (duration: 1 week)
+					const { data, error } = await client.storage.from(bucket).createSignedUrl(path, 604800); 
+					
+					if (!error && data?.signedUrl) {
+						avatarUrl = data.signedUrl;
+					}
 				}
 			}
 		} catch (err) {
-			console.error("[Security] Failed to generate signed URL for avatar:", err instanceof Error ? err.message : String(err));
+			// Silent fail for signed URL generation in mapping
 		}
 	}
 

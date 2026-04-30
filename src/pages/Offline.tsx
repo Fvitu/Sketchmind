@@ -28,7 +28,7 @@ export default function OfflinePage() {
         alt="Sketchmind"
         width={72}
         height={72}
-        style={{ opacity: 0.85, borderRadius: "20px" }}
+       style={{ opacity: 0.85, borderRadius: "20px" }}
       />
 
       {/* Headline */}

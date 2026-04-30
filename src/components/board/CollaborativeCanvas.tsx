@@ -234,17 +234,22 @@ export function CollaborativeCanvas({
 		if (!excalidrawAPI.current || isExporting) return;
 		setIsExporting(true);
 		try {
+			const elements = excalidrawAPI.current.getSceneElements();
+			const currentAppState = excalidrawAPI.current.getAppState();
+			
 			const blob = await exportToBlob({
-				elements: excalidrawAPI.current.getSceneElements(),
+				elements,
 				appState: {
-					...excalidrawAPI.current.getAppState(),
-					exportWithDarkMode: theme === "dark",
+					exportWithDarkMode: true,
 					exportBackground: true,
+					viewBackgroundColor: "#0b1120",
+					exportEmbedScene: true,
+					exportPadding: 20,
+					exportScale: 2,
 				},
 				files: excalidrawAPI.current.getFiles(),
 				mimeType: "image/png",
 				quality: 1,
-				getDimensions: (w, h) => ({ width: w, height: h, scale: 2 }),
 			});
 
 			const url = URL.createObjectURL(blob);

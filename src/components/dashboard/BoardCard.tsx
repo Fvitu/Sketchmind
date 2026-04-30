@@ -8,7 +8,6 @@ import { exportToSvg } from "@excalidraw/excalidraw";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger, DropdownMenuSeparator } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
 
-
 const BoardThumbnail = ({ board, palette }: { board: Board; palette: string }) => {
 	const [svgStr, setSvgStr] = useState<string | null>(null);
 	const [loading, setLoading] = useState(true);
@@ -129,7 +128,7 @@ export const BoardCard = ({ board, onRename, onDuplicate, onDelete, isActionsAct
 									? "bg-violet-500/20 text-violet-300 shadow-[0_0_10px_-2px_rgba(139,92,246,0.4)] border border-violet-500/20"
 									: isPublic
 										? "bg-emerald-500/15 text-emerald-500 shadow-[0_0_8px_-2px_rgba(16,185,129,0.3)]"
-										: "bg-accent/60 text-muted-foreground"
+										: "bg-accent/60 text-muted-foreground",
 							)}>
 							{isSharedWithMe ? (
 								<>

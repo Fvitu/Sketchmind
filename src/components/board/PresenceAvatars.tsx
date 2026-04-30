@@ -80,20 +80,20 @@ export function PresenceAvatars({ self, others }: PresenceAvatarsProps) {
 		...(self?.info
 			? [
 					{
-						name: self.presence?.name || self.info.name,
+						name: self.info.name || self.presence?.name || "You",
 						email: self.info.email,
-						color: self.presence?.color || getUserColor(self.connectionId),
-						avatar: self.presence?.avatar || self.info.avatar,
+						color: self.presence?.color || self.info.color || getUserColor(self.connectionId),
+						avatar: self.info.avatar || self.presence?.avatar || "",
 						isSelf: true,
 						key: "self",
 					},
 				]
 			: []),
 		...others.map((o) => ({
-			name: o.presence?.name || o.info?.name || "Anonymous",
+			name: o.info?.name || o.presence?.name || "Anonymous",
 			email: o.info?.email,
-			color: o.presence?.color || getUserColor(o.connectionId),
-			avatar: o.presence?.avatar || o.info?.avatar || "",
+			color: o.info?.color || o.presence?.color || getUserColor(o.connectionId),
+			avatar: o.info?.avatar || o.presence?.avatar || "",
 			isSelf: false,
 			key: String(o.connectionId),
 		})),
